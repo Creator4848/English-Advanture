@@ -1,3 +1,8 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { Rocket, Star, Globe, Mic, Zap, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { useState, useEffect, type ReactNode } from "react";
 
 export default function Home() {
