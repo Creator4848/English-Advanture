@@ -4,16 +4,30 @@ import { motion } from "framer-motion";
 import { Mic, CheckCircle, ChevronRight, X } from "lucide-react";
 import { useState } from "react";
 
-export default function MissionCard({ title, targetText, difficulty }: { title: string, targetText: string, difficulty: number }) {
+export default function MissionCard({ id, title, targetText, difficulty }: { id: number, title: string, targetText: string, difficulty: number }) {
     const [isRecording, setIsRecording] = useState(false);
     const [feedback, setFeedback] = useState<string | null>(null);
     const [reward, setReward] = useState<{ xp: number, coins: number } | null>(null);
 
     const handleComplete = async () => {
-        // Simulate API call to submit progress
-        const response = { xp_gain: 95, coin_gain: 47 };
-        setReward({ xp: response.xp_gain, coins: response.coin_gain });
-        setFeedback("Ajoyib! Missiya muvaffaqiyatli yakunlandi.");
+        try {
+            // In a real browser we'd use MediaRecorder to get a Blob.
+            // For this Vercel demo, we'll simulate the upload to the real endpoint /api/v1/progress/submit
+            const response = await fetch(`/api/v1/progress/submit?user_id=1&mission_id=${id}&score=0.95`, {
+                method: "POST"
+            });
+            const data = await response.json();
+
+            if (data.status === "success") {
+                setReward({ xp: data.xp_gain, coins: data.coin_gain });
+                setFeedback("Ajoyib! Missiya muvaffaqiyatli yakunlandi.");
+            }
+        } catch (error) {
+            console.error("Submission error:", error);
+            // Fallback for demo
+            setReward({ xp: 95, coins: 45 });
+            setFeedback("Simulyatsiya: Missiya yakunlandi.");
+        }
     };
 
     return (

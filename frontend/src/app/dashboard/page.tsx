@@ -1,19 +1,43 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Rocket, Star, Trophy, ArrowRight, Play } from "lucide-react";
 import Link from "next/link";
 import MissionCard from "@/components/MissionCard";
-import { useState } from "react";
 
 export default function Dashboard() {
     const [activeMission, setActiveMission] = useState<any>(null);
+    const [stats, setStats] = useState({ xp: 1250, level: 1 });
+    const [missions, setMissions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const missions = [
-        { id: 1, title: "Birinchi Qadam", difficulty: 1, status: "completed", target: "Hello, I am an astronaut." },
-        { id: 2, title: "Oy Safari", difficulty: 3, status: "available", target: "The moon is very beautiful." },
-        { id: 3, title: "Mars Missiyasi", difficulty: 5, status: "locked", target: "Welcome to the red planet." },
-    ];
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // For demo purposes, we'll use user_id = 1
+                const statsRes = await fetch("/api/v1/achievements?user_id=1");
+                const missionRes = await fetch("/api/v1/missions/next?user_id=1");
+
+                const missionData = await missionRes.json();
+                if (missionData.mission) {
+                    setMissions([
+                        { ...missionData.mission, status: "available" },
+                        { id: 101, title: "Keyingi Sarguzasht", difficulty: 5, status: "locked", target: "" }
+                    ]);
+                }
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                // Fallback for demo
+                setMissions([
+                    { id: 1, title: "Birinchi Qadam", difficulty_rank: 1, status: "available", content: { target_sentence: "Hello, I am an astronaut." } },
+                ]);
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     if (activeMission) {
         return (
@@ -38,9 +62,10 @@ export default function Dashboard() {
 
                 <div className="relative z-10 w-full flex justify-center">
                     <MissionCard
+                        id={activeMission.id}
                         title={activeMission.title}
-                        targetText={activeMission.target}
-                        difficulty={activeMission.difficulty}
+                        targetText={activeMission.content?.target_sentence || activeMission.target}
+                        difficulty={activeMission.difficulty_rank || activeMission.difficulty}
                     />
                 </div>
             </div>
@@ -65,14 +90,14 @@ export default function Dashboard() {
                         </div>
                         <div className="flex flex-col">
                             <span className="text-[10px] uppercase font-black text-amber-600 leading-none mb-0.5">Tajriba</span>
-                            <span className="font-black text-slate-800 leading-none">1,250 XP</span>
+                            <span className="font-black text-slate-800 leading-none">{stats.xp} XP</span>
                         </div>
                     </div>
                     <motion.div
                         whileHover={{ scale: 1.05 }}
                         className="w-12 h-12 bg-gradient-to-br from-blue-500 to-sky-400 rounded-2xl border-4 border-white shadow-xl flex items-center justify-center text-white font-black"
                     >
-                        A
+                        {stats.level}
                     </motion.div>
                 </div>
             </header>
@@ -87,52 +112,62 @@ export default function Dashboard() {
                     <p className="text-lg text-slate-500 font-medium font-sans">Bugun qaysi sayyorada sarguzasht boshlaymiz?</p>
                 </motion.div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-                    {missions.map((mission, idx) => (
+                {loading ? (
+                    <div className="flex justify-center py-20">
                         <motion.div
-                            key={mission.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.1 }}
-                            whileHover={mission.status !== "locked" ? { y: -12, scale: 1.02 } : {}}
-                            className={`relative p-10 rounded-[3rem] border-2 transition-all ${mission.status === "completed" ? "bg-white border-blue-100 shadow-xl shadow-blue-50/50" :
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                            className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"
+                        />
+                    </div>
+                ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        {missions.map((mission, idx) => (
+                            <motion.div
+                                key={mission.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.1 }}
+                                whileHover={mission.status !== "locked" ? { y: -12, scale: 1.02 } : {}}
+                                className={`relative p-10 rounded-[3rem] border-2 transition-all ${mission.status === "completed" ? "bg-white border-blue-100 shadow-xl shadow-blue-50/50" :
                                     mission.status === "available" ? "bg-white border-white shadow-2xl shadow-blue-100/30" :
                                         "bg-slate-50 border-transparent grayscale opacity-50"
-                                }`}
-                        >
-                            <div className="flex justify-between items-center mb-8">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${mission.status === "completed" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-slate-100 text-slate-400"
-                                    }`}>
-                                    <Trophy className="w-7 h-7" />
+                                    }`}
+                            >
+                                <div className="flex justify-between items-center mb-8">
+                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${mission.status === "completed" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-slate-100 text-slate-400"
+                                        }`}>
+                                        <Trophy className="w-7 h-7" />
+                                    </div>
+                                    {mission.status === "locked" && (
+                                        <div className="bg-slate-200 p-2 rounded-lg">
+                                            <Star className="w-4 h-4 text-slate-400" />
+                                        </div>
+                                    )}
                                 </div>
-                                {mission.status === "locked" && (
-                                    <div className="bg-slate-200 p-2 rounded-lg">
-                                        <Star className="w-4 h-4 text-slate-400" />
+
+                                <h3 className="text-2xl font-black text-slate-900 mb-3 font-display">{mission.title}</h3>
+                                <p className="text-slate-500 text-[15px] mb-10 font-bold uppercase tracking-widest bg-slate-50 inline-block px-3 py-1 rounded-md">
+                                    DARAJA {mission.difficulty_rank || mission.difficulty}
+                                </p>
+
+                                {mission.status !== "locked" ? (
+                                    <button
+                                        onClick={() => setActiveMission(mission)}
+                                        className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] font-black flex items-center justify-center space-x-3 hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 hover:shadow-blue-200 border-b-4 border-slate-950 active:border-b-0 active:translate-y-1"
+                                    >
+                                        <Play className="w-5 h-5 fill-white" />
+                                        <span className="uppercase tracking-widest text-[10px]">{mission.status === "completed" ? "Qayta takrorlash" : "Missiyani boshlash"}</span>
+                                    </button>
+                                ) : (
+                                    <div className="w-full py-5 bg-slate-200 text-slate-400 rounded-[1.5rem] font-black text-center cursor-not-allowed uppercase tracking-widest text-[10px]">
+                                        Daraja Qulflangan
                                     </div>
                                 )}
-                            </div>
-
-                            <h3 className="text-2xl font-black text-slate-900 mb-3 font-display">{mission.title}</h3>
-                            <p className="text-slate-500 text-[15px] mb-10 font-bold uppercase tracking-widest bg-slate-50 inline-block px-3 py-1 rounded-md">
-                                DARAJA {mission.difficulty}
-                            </p>
-
-                            {mission.status !== "locked" ? (
-                                <button
-                                    onClick={() => setActiveMission(mission)}
-                                    className="w-full py-5 bg-slate-910 text-white rounded-[1.5rem] font-black flex items-center justify-center space-x-3 hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 hover:shadow-blue-200 border-b-4 border-slate-950 active:border-b-0 active:translate-y-1"
-                                >
-                                    <Play className="w-5 h-5 fill-white" />
-                                    <span className="uppercase tracking-widest text-[10px]">{mission.status === "completed" ? "Qayta takrorlash" : "Missiyani boshlash"}</span>
-                                </button>
-                            ) : (
-                                <div className="w-full py-5 bg-slate-200 text-slate-400 rounded-[1.5rem] font-black text-center cursor-not-allowed uppercase tracking-widest text-[10px]">
-                                    Daraja Qulflangan
-                                </div>
-                            )}
-                        </motion.div>
-                    ))}
-                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
             </main>
         </div>
     );

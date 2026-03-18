@@ -30,8 +30,8 @@ async def root():
 
 @app.post("/api/v1/speech/analyze")
 async def analyze_speech(file: UploadFile = File(...), target_text: str = "", db: Session = Depends(get_db)):
-    # Save temporary file
-    temp_path = f"temp_{file.filename}"
+    # Save temporary file in /tmp for Vercel/Serverless compatibility
+    temp_path = os.path.join("/tmp", f"temp_{file.filename}")
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
