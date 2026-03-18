@@ -7,13 +7,34 @@ from database import get_db, engine
 import models, speech, adaptive, llm_service
 
 # Create tables
-models.Base.metadata.create_all(bind=engine)
+try:
+    models.Base.metadata.create_all(bind=engine)
+    print("Database tables created successfully")
+except Exception as e:
+    print(f"Error creating database tables: {e}")
+    # We don't raise here to allow health check to still work
 
 app = FastAPI(title="English Adventure: Gravity Zero API")
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "service": "FastAPI"}
+    db_status = "unknown"
+    try:
+        # Check DB connection
+        from sqlalchemy import text
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+
+    return {
+        "status": "healthy", 
+        "service": "FastAPI",
+        "database": db_status,
+        "openai_key": "Set" if os.getenv("OPENAI_API_KEY") else "Not Set",
+        "env": os.getenv("VERCEL_ENV", "local")
+    }
 
 
 # Configure CORS

@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Use SQLite as fallback for local demo
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./english_adventure.db")
+# On Vercel, the filesystem is read-only, so we must use /tmp for the local db
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:////tmp/english_adventure.db")
 
 # SQLite specific connect_args
 if DATABASE_URL.startswith("sqlite"):
