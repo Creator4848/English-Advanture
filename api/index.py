@@ -12,7 +12,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="English Adventure: Gravity Zero API")
 
 @app.get("/api/health")
-async function health_check():
+async def health_check():
     return {"status": "healthy", "service": "FastAPI"}
 
 
