@@ -1,9 +1,4 @@
-"use client";
-
-import { motion } from "framer-motion";
-import { Rocket, Star, Globe, Mic, Zap, ArrowRight } from "lucide-react";
-import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -134,7 +129,7 @@ export default function Home() {
   );
 }
 
-function FeatureCard({ icon, title, description, delay }: { icon: React.ReactNode, title: string, description: string, delay: number }) {
+function FeatureCard({ icon, title, description, delay }: { icon: ReactNode, title: string, description: string, delay: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
