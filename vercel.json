@@ -1,10 +1,55 @@
 {
   "version": 2,
   "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12",
+      "maxDuration": 30,
+      "memory": 512
+    }
+  },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "api/index.py"
+      "source": "/api/health",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/api/auth/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/api/videos/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/api/quiz/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/api/progress/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/api/speaking/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/api/leaderboard",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/api/achievements/:path*",
+      "destination": "/api/index.py"
     }
-  ]
+  ],
+  "env": {
+    "DATABASE_URL": "sqlite:////tmp/english_adventure.db",
+    "REDIS_URL": "",
+    "JWT_SECRET": "english-adventure-secret-2026-production",
+    "OPENAI_API_KEY": "",
+    "YOUTUBE_API_KEY": "",
+    "YOUTUBE_CHANNEL_ID": ""
+  }
 }

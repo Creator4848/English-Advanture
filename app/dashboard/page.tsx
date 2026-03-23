@@ -1,174 +1,234 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Rocket, Star, Trophy, ArrowRight, Play } from "lucide-react";
 import Link from "next/link";
-import MissionCard from "@/components/MissionCard";
+import { motion } from "framer-motion";
+import { BookOpen, CheckCircle, Mic, Star, Trophy, Zap, ArrowRight } from "lucide-react";
 
-export default function Dashboard() {
-    const [activeMission, setActiveMission] = useState<any>(null);
-    const [stats, setStats] = useState({ xp: 1250, level: 1 });
-    const [missions, setMissions] = useState<any[]>([]);
+const API = process.env.NEXT_PUBLIC_API_URL || "/api";
+const USER_ID = 1;
+
+const MOCK_DASHBOARD = {
+    user_id: 1,
+    username: "Ali",
+    full_name: "Ali Valiyev",
+    level: 3,
+    xp: 2450,
+    coins: 180,
+    videos_completed: 8,
+    quizzes_passed: 5,
+    speaking_minutes: 12,
+    badges: [
+        { code: "first_video", name: "Birinchi Dars 🎬", icon_url: "" },
+        { code: "quiz_hero", name: "Test Qahramoni 🏆", icon_url: "" },
+        { code: "speaker", name: "Suhbatchi 🎙️", icon_url: "" },
+    ],
+};
+
+const XP_PER_LEVEL = 1000;
+
+const RECENT_ACTIVITIES = [
+    { icon: "🎬", text: "Colors in English darsini ko'rdingiz", xp: "+50 XP", time: "1 soat oldin" },
+    { icon: "📝", text: "Colors Quiz-ni bajardingiz (90%)", xp: "+135 XP", time: "1 soat oldin" },
+    { icon: "🎙️", text: "Alex bilan 5 daqiqa inglizcha gaplashdingiz", xp: "+50 XP", time: "Kecha" },
+];
+
+export default function DashboardPage() {
+    const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchData = async () => {
+        (async () => {
             try {
-                // For demo purposes, we'll use user_id = 1
-                const statsRes = await fetch("/api/v1/achievements?user_id=1");
-                const missionRes = await fetch("/api/v1/missions/next?user_id=1");
-
-                const missionData = await missionRes.json();
-                if (missionData.mission) {
-                    setMissions([
-                        { ...missionData.mission, status: "available" },
-                        { id: 101, title: "Keyingi Sarguzasht", difficulty: 5, status: "locked", target: "" }
-                    ]);
-                }
-                setLoading(false);
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                // Fallback for demo
-                setMissions([
-                    { id: 1, title: "Birinchi Qadam", difficulty_rank: 1, status: "available", content: { target_sentence: "Hello, I am an astronaut." } },
-                ]);
+                const res = await fetch(`${API}/progress/${USER_ID}`);
+                if (res.ok) setData(await res.json());
+                else setData(MOCK_DASHBOARD);
+            } catch {
+                setData(MOCK_DASHBOARD);
+            } finally {
                 setLoading(false);
             }
-        };
-        fetchData();
+        })();
     }, []);
 
-    if (activeMission) {
+    if (loading) {
         return (
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 relative overflow-hidden">
-                {/* Animated Background */}
-                <div className="absolute inset-0 z-0">
-                    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--color-blue-900)_0%,_transparent_70%)] opacity-50" />
-                    <motion.div
-                        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
-                        transition={{ duration: 10, repeat: Infinity }}
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[120px]"
-                    />
-                </div>
-
-                <button
-                    onClick={() => setActiveMission(null)}
-                    className="absolute top-8 left-8 z-50 text-white/50 hover:text-white flex items-center space-x-2 font-black uppercase tracking-widest text-xs transition-colors"
-                >
-                    <ArrowRight className="rotate-180 w-4 h-4" />
-                    <span>Orqaga</span>
-                </button>
-
-                <div className="relative z-10 w-full flex justify-center">
-                    <MissionCard
-                        id={activeMission.id}
-                        title={activeMission.title}
-                        targetText={activeMission.content?.target_sentence || activeMission.target}
-                        difficulty={activeMission.difficulty_rank || activeMission.difficulty}
-                    />
-                </div>
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="text-5xl animate-bounce">⚡</div>
             </div>
         );
     }
 
+    const d = data || MOCK_DASHBOARD;
+    const levelXP = d.xp % XP_PER_LEVEL;
+    const levelPct = Math.round((levelXP / XP_PER_LEVEL) * 100);
+    const nextLevelXP = XP_PER_LEVEL - levelXP;
+
     return (
-        <div className="min-h-screen bg-[#fafcfe] selection:bg-blue-100 italic selection:text-blue-900">
-            {/* Premium Header */}
-            <header className="px-8 py-6 flex justify-between items-center border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-                <div className="flex items-center space-x-3 group cursor-pointer">
-                    <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-100 group-hover:rotate-12 transition-transform">
-                        <Rocket className="text-white w-5 h-5" />
+        <main className="min-h-screen bg-gray-50" id="dashboard-page">
+
+            {/* Header */}
+            <div className="bg-[#111111] px-6 lg:px-20 py-12">
+                <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-8">
+
+                    {/* Avatar */}
+                    <div className="w-24 h-24 rounded-2xl bg-[#FFB800] flex items-center justify-center text-4xl shadow-lg flex-shrink-0">
+                        👦
                     </div>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tighter font-display uppercase">Gravity Zero</h1>
+
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="badge bg-[#FFB800]/20 text-[#FFB800] mb-3">Level {d.level}</div>
+                        <h1 className="text-3xl md:text-5xl font-black text-white mb-2">
+                            {d.full_name || d.username}
+                        </h1>
+                        <div className="flex flex-wrap gap-6 justify-center md:justify-start mt-4">
+                            {[
+                                { v: `${d.xp} XP`, l: "Umumiy tajriba", icon: <Zap className="w-4 h-4 text-[#FFB800]" /> },
+                                { v: d.coins, l: "Coin", icon: <Star className="w-4 h-4 text-[#FFB800]" /> },
+                                { v: d.badges.length, l: "Badge", icon: <Trophy className="w-4 h-4 text-[#FFB800]" /> },
+                            ].map((s) => (
+                                <div key={s.l} className="text-center md:text-left">
+                                    <div className="flex items-center gap-1 text-white font-black text-2xl">
+                                        {s.icon} {s.v}
+                                    </div>
+                                    <div className="text-gray-400 text-xs font-medium">{s.l}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Level progress */}
+                    <div className="text-center md:text-right">
+                        <div className="text-white font-black text-sm mb-2">
+                            Keyingi levelga {nextLevelXP} XP qoldi
+                        </div>
+                        <div className="w-48 progress-track">
+                            <div className="progress-fill" style={{ width: `${levelPct}%` }} />
+                        </div>
+                        <div className="text-gray-400 text-xs font-medium mt-1">{levelXP} / {XP_PER_LEVEL} XP</div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="max-w-6xl mx-auto px-6 lg:px-20 py-10">
+
+                {/* Stats cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+                    {[
+                        {
+                            icon: <BookOpen className="w-6 h-6 text-[#FFB800]" />,
+                            label: "Ko'rilgan Darslar",
+                            value: d.videos_completed,
+                            link: "/lessons",
+                        },
+                        {
+                            icon: <CheckCircle className="w-6 h-6 text-[#FFB800]" />,
+                            label: "O'tilgan Testlar",
+                            value: d.quizzes_passed,
+                            link: "/lessons",
+                        },
+                        {
+                            icon: <Mic className="w-6 h-6 text-[#FFB800]" />,
+                            label: "Speaking Daqiqalar",
+                            value: d.speaking_minutes,
+                            link: "/speaking-club",
+                        },
+                    ].map((s) => (
+                        <Link href={s.link} key={s.label}>
+                            <motion.div
+                                className="card p-6 flex items-center gap-4 hover:border-[#FFB800] cursor-pointer"
+                                whileHover={{ scale: 1.02 }}
+                            >
+                                <div className="w-12 h-12 rounded-xl bg-[#FFF3CC] flex items-center justify-center flex-shrink-0">
+                                    {s.icon}
+                                </div>
+                                <div>
+                                    <div className="text-3xl font-black text-[#111111]">{s.value}</div>
+                                    <div className="text-xs text-gray-400 font-bold">{s.label}</div>
+                                </div>
+                            </motion.div>
+                        </Link>
+                    ))}
                 </div>
 
-                <div className="flex items-center space-x-8">
-                    <div className="flex items-center space-x-3 bg-amber-50 border border-amber-100 px-5 py-2 rounded-2xl">
-                        <div className="w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center shadow-inner">
-                            <Star className="text-white w-5 h-5 fill-white" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[10px] uppercase font-black text-amber-600 leading-none mb-0.5">Tajriba</span>
-                            <span className="font-black text-slate-800 leading-none">{stats.xp} XP</span>
+                <div className="grid md:grid-cols-2 gap-8">
+
+                    {/* Badges */}
+                    <div className="card p-6 bg-white">
+                        <h2 className="font-black text-[#111111] text-xl mb-5 flex items-center gap-2">
+                            <Trophy className="w-5 h-5 text-[#FFB800]" /> Mening Yutuqlarim
+                        </h2>
+                        {d.badges.length ? (
+                            <div className="flex flex-wrap gap-3">
+                                {d.badges.map((b: any) => (
+                                    <motion.div
+                                        key={b.code}
+                                        className="card px-4 py-3 flex items-center gap-2 bg-[#FFF3CC] border-[#FFB800]"
+                                        whileHover={{ scale: 1.05 }}
+                                    >
+                                        <span className="text-2xl">{b.name.split(" ").pop()}</span>
+                                        <span className="text-xs font-black text-[#111111]">
+                                            {b.name.split(" ").slice(0, -1).join(" ")}
+                                        </span>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-gray-400">
+                                <Trophy className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                                <p className="font-medium text-sm">Yutuqlar hali yo'q. Darslarni boshlang!</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Recent activity */}
+                    <div className="card p-6 bg-white">
+                        <h2 className="font-black text-[#111111] text-xl mb-5 flex items-center gap-2">
+                            <Zap className="w-5 h-5 text-[#FFB800]" /> So'nggi Faollik
+                        </h2>
+                        <div className="space-y-4">
+                            {RECENT_ACTIVITIES.map((a, i) => (
+                                <motion.div
+                                    key={i}
+                                    className="flex items-start gap-3"
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                >
+                                    <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-lg flex-shrink-0">
+                                        {a.icon}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium text-[#111111]">{a.text}</p>
+                                        <p className="text-xs text-gray-400 font-medium mt-0.5">{a.time}</p>
+                                    </div>
+                                    <span className="badge text-xs">{a.xp}</span>
+                                </motion.div>
+                            ))}
                         </div>
                     </div>
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className="w-12 h-12 bg-gradient-to-br from-blue-500 to-sky-400 rounded-2xl border-4 border-white shadow-xl flex items-center justify-center text-white font-black"
-                    >
-                        {stats.level}
-                    </motion.div>
                 </div>
-            </header>
 
-            <main className="max-w-6xl mx-auto p-12">
+                {/* CTA banner */}
                 <motion.div
+                    className="mt-8 bg-[#111111] rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-16"
+                    transition={{ delay: 0.3 }}
                 >
-                    <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight font-display">Salom, Kichik Astronavt! 👋</h2>
-                    <p className="text-lg text-slate-500 font-medium font-sans">Bugun qaysi sayyorada sarguzasht boshlaymiz?</p>
+                    <div>
+                        <div className="text-[#FFB800] font-black text-sm mb-1">Davom eting! 🚀</div>
+                        <h3 className="text-white font-black text-2xl">Keyingi darsni boshlang</h3>
+                        <p className="text-gray-400 text-sm font-medium mt-1">
+                            Har kunlik mashqlar bilan ingliz tilingizni rivojlantiring.
+                        </p>
+                    </div>
+                    <Link href="/lessons" id="continue-learning-btn" className="btn-yellow flex-shrink-0">
+                        Davom Etish <ArrowRight className="w-4 h-4" />
+                    </Link>
                 </motion.div>
 
-                {loading ? (
-                    <div className="flex justify-center py-20">
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                            className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"
-                        />
-                    </div>
-                ) : (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-                        {missions.map((mission, idx) => (
-                            <motion.div
-                                key={mission.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.1 }}
-                                whileHover={mission.status !== "locked" ? { y: -12, scale: 1.02 } : {}}
-                                className={`relative p-10 rounded-[3rem] border-2 transition-all ${mission.status === "completed" ? "bg-white border-blue-100 shadow-xl shadow-blue-50/50" :
-                                    mission.status === "available" ? "bg-white border-white shadow-2xl shadow-blue-100/30" :
-                                        "bg-slate-50 border-transparent grayscale opacity-50"
-                                    }`}
-                            >
-                                <div className="flex justify-between items-center mb-8">
-                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${mission.status === "completed" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-slate-100 text-slate-400"
-                                        }`}>
-                                        <Trophy className="w-7 h-7" />
-                                    </div>
-                                    {mission.status === "locked" && (
-                                        <div className="bg-slate-200 p-2 rounded-lg">
-                                            <Star className="w-4 h-4 text-slate-400" />
-                                        </div>
-                                    )}
-                                </div>
-
-                                <h3 className="text-2xl font-black text-slate-900 mb-3 font-display">{mission.title}</h3>
-                                <p className="text-slate-500 text-[15px] mb-10 font-bold uppercase tracking-widest bg-slate-50 inline-block px-3 py-1 rounded-md">
-                                    DARAJA {mission.difficulty_rank || mission.difficulty}
-                                </p>
-
-                                {mission.status !== "locked" ? (
-                                    <button
-                                        onClick={() => setActiveMission(mission)}
-                                        className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] font-black flex items-center justify-center space-x-3 hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 hover:shadow-blue-200 border-b-4 border-slate-950 active:border-b-0 active:translate-y-1"
-                                    >
-                                        <Play className="w-5 h-5 fill-white" />
-                                        <span className="uppercase tracking-widest text-[10px]">{mission.status === "completed" ? "Qayta takrorlash" : "Missiyani boshlash"}</span>
-                                    </button>
-                                ) : (
-                                    <div className="w-full py-5 bg-slate-200 text-slate-400 rounded-[1.5rem] font-black text-center cursor-not-allowed uppercase tracking-widest text-[10px]">
-                                        Daraja Qulflangan
-                                    </div>
-                                )}
-                            </motion.div>
-                        ))}
-                    </div>
-                )}
-            </main>
-        </div>
+            </div>
+        </main>
     );
 }
