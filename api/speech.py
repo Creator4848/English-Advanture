@@ -1,18 +1,18 @@
-import openai
-import difflib
 import os
+import difflib
+from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
 
 class VoiceAnalyzer:
     def __init__(self):
-        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.api_key = os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
-            print("WARNING: OPENAI_API_KEY not found. Using Mock VoiceAnalyzer.")
+            print("WARNING: GROQ_API_KEY not found. Using Mock VoiceAnalyzer.")
             self.mock_mode = True
         else:
-            self.client = openai.OpenAI(api_key=self.api_key)
+            self.client = Groq(api_key=self.api_key)
             self.mock_mode = False
 
     async def analyze_pronunciation(self, audio_file_path: str, target_text: str):
@@ -23,17 +23,17 @@ class VoiceAnalyzer:
                 "feedback": "Ajoyib! (MOCK)",
                 "points": 10
             }
-        # ... rest of the original code ...
-        # 1. Transcribe audio
+
+        # 1. Transcribe audio using Groq Whisper
         with open(audio_file_path, "rb") as audio_file:
-            transcript = self.client.audio.transcriptions.create(
-                model="whisper-1", 
+            transcription = self.client.audio.transcriptions.create(
+                model="whisper-large-v3", 
                 file=audio_file,
                 response_format="text"
             )
         
         # 2. Compare with target text (Case-insensitive)
-        similarity = difflib.SequenceMatcher(None, transcript.lower(), target_text.lower()).ratio()
+        similarity = difflib.SequenceMatcher(None, transcription.lower(), target_text.lower()).ratio()
         
         # 3. Decision logic
         feedback = ""
@@ -45,11 +45,11 @@ class VoiceAnalyzer:
             feedback = "Yaxshi, lekin biroz aniqroq talaffuz qilishga harakat qiling."
             points = 7
         else:
-            feedback = f"Siz '{transcript}' deb aytdingiz. Yana bir bor urinib ko'ring!"
+            feedback = f"Siz '{transcription}' deb aytdingiz. Yana bir bor urinib ko'ring!"
             points = 2
             
         return {
-            "transcription": transcript,
+            "transcription": transcription,
             "similarity": similarity,
             "feedback": feedback,
             "points": points

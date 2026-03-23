@@ -47,6 +47,7 @@ async def speaking_partner_ws(
     topic_obj   = next((t for t in SPEAKING_TOPICS if t["id"] == topic_id), SPEAKING_TOPICS[-1])
     topic_label = topic_obj["label"]
     topic_desc  = topic_obj["prompt"]
+    topic_name = topic_label # Used in the new prompt structure
 
     history: list[dict] = [
         {
@@ -54,10 +55,23 @@ async def speaking_partner_ws(
             "content": SYSTEM_PROMPT.format(topic=f"{topic_label} – {topic_desc}"),
         }
     ]
-    greeting = f"Hi! I'm Alex 🌟 Today we're going to talk about {topic_label}! {topic_desc}. Are you ready? Let's go! 🚀"
-    history.append({"role": "assistant", "content": greeting})
+    # greeting = f"Hi! I'm Alex 🌟 Today we're going to talk about {topic_label}! {topic_desc}. Are you ready? Let's go! 🚀"
+    # history.append({"role": "assistant", "content": greeting})
 
-    await websocket.send_json({"type": "greeting", "text": greeting, "topic": topic_label})
+    # await websocket.send_json({"type": "greeting", "text": greeting, "topic": topic_label})
+
+    # 1. Send initial greeting
+    greeting_text = f"Hi! I'm Alex. Let's talk about {topic_name}! How are you today?"
+    if topic_id == "animals":
+        greeting_text = "Hello! I love animals. What is your favorite animal? 🐾"
+    
+    await websocket.send_json({
+        "type": "greeting",
+        "text": greeting_text,
+        "topic": topic_label
+    })
+    history.append({"role": "assistant", "content": greeting_text})
+
 
     transcript_log: list[dict] = []
     session_start  = time.time()
@@ -74,21 +88,30 @@ async def speaking_partner_ws(
 
             # ── Audio blob → Whisper ─────────────────────────────────────
             if "bytes" in data and data["bytes"]:
-                audio_bytes = data["bytes"]
-                tmp_path    = f"/tmp/speaking_{user_id}.webm"
-                with open(tmp_path, "wb") as f:
-                    f.write(audio_bytes)
+                if not client:
+                    await websocket.send_json({"type": "error", "message": "Groq API key not configured"})
+                    continue
+                
+                # Save temp audio file
+                temp_filename = f"temp_audio_{user_id}_{int(time.time())}.webm"
+                with open(temp_filename, "wb") as f:
+                    f.write(data["bytes"])
+                
                 try:
-                    with open(tmp_path, "rb") as audio_file:
-                        transcript_resp = await client.audio.transcriptions.create(
-                            model="whisper-1",
+                    # Transcribe using Groq Whisper-large-v3
+                    with open(temp_filename, "rb") as audio_file:
+                        transcript_resp = client.audio.transcriptions.create(
+                            model="whisper-large-v3",
                             file=audio_file,
-                            language="en",
+                            response_format="text"
                         )
-                    user_text = transcript_resp.text.strip()
+                    user_text = transcript_resp.strip()
                 except Exception as e:
                     await websocket.send_json({"type": "error", "message": f"Transcription failed: {e}"})
                     continue
+                finally:
+                    if os.path.exists(temp_filename):
+                        os.remove(temp_filename)
 
             # ── Text message fallback ────────────────────────────────────
             elif "text" in data:
@@ -107,28 +130,50 @@ async def speaking_partner_ws(
             transcript_log.append({"role": "user", "content": user_text, "ts": time.time()})
 
             # ── GPT-4o-mini reply ────────────────────────────────────────
-            try:
-                completion = await client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=history,
-                    max_tokens=150,
-                    temperature=0.75,
-                )
-                ai_reply = completion.choices[0].message.content
-            except Exception as e:
-                await websocket.send_json({"type": "error", "message": str(e)})
-                continue
+            # 2. Generate AI Reply using Groq Llama-3.3-70b
+            system_prompt = f"""
+            You are Alex, a friendly English tutor for children. 
+            Topic: {topic_name}. 
+            Task: Keep the conversation going with simple English. 
+            Encourage the child. 
+            Also, evaluate the user's sentence and provide scores (1-10) for:
+            1. Fluency
+            2. Grammar
+            3. Vocabulary
+            
+            Reply ONLY in JSON format:
+            {{
+                "reply": "your conversational response",
+                "scores": {{ "fluency": 8, "grammar": 7, "vocab": 9 }}
+            }}
+            """
+            
+            ai_reply = ""
+            scores = {"fluency": 7, "grammar": 7, "vocab": 7} # defaults
+            if not client:
+                # Mock fallback
+                ai_reply = f"That's interesting! Tell me more about {topic_name}."
+                scores = {"fluency": 10, "grammar": 10, "vocab": 10}
+            else:
+                try:
+                    chat_completion = await client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_text}
+                        ],
+                        response_format={"type": "json_object"}
+                    )
+                    res_data = json.loads(chat_completion.choices[0].message.content)
+                    ai_reply = res_data.get("reply", "")
+                    scores = res_data.get("scores", {"fluency": 0, "grammar": 0, "vocab": 0})
+                except Exception as e:
+                    await websocket.send_json({"type": "error", "message": str(e)})
+                    continue
 
             history.append({"role": "assistant", "content": ai_reply})
             transcript_log.append({"role": "assistant", "content": ai_reply, "ts": time.time()})
 
-            # ── Scoring (prompt-based, lightweight) ─────────────────────
-            scores = {"fluency": 7, "grammar": 7, "vocab": 7}   # defaults
-            try:
-                score_prompt = (
-                    f"Rate this child English sentence on fluency, grammar, and vocabulary out of 10. "
-                    f'Reply ONLY valid JSON like {{"fluency":7,"grammar":8,"vocab":6}}.\nSentence: "{user_text}"'
-                )
                 score_resp = await client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[{"role": "user", "content": score_prompt}],
