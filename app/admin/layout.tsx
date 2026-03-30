@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Sidebar from "@/components/admin/Sidebar";
+import AdminAuthWrapper from "@/components/admin/AdminAuthWrapper";
 import "@/app/admin/admin.css";
 
 export const metadata: Metadata = {
@@ -12,12 +12,5 @@ export default function AdminLayout({
 }: {
     children: React.ReactNode;
 }) {
-    return (
-        <div className="admin-wrapper">
-            <Sidebar />
-            <div className="admin-main">
-                {children}
-            </div>
-        </div>
-    );
+    return <AdminAuthWrapper>{children}</AdminAuthWrapper>;
 }
