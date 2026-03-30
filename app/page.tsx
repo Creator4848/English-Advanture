@@ -67,14 +67,19 @@ export default function Home() {
           <Link href="/lessons" className="hover:text-[#111111] transition-colors">Darslar</Link>
           <Link href="/speaking-club" className="hover:text-[#111111] transition-colors">Speaking Club</Link>
           <Link href="/dashboard" className="hover:text-[#111111] transition-colors">Dashboard</Link>
-          <Link href="/lessons" className="btn-yellow text-sm">
-            Boshlash <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/register" className="text-sm font-bold text-gray-500 hover:text-[#111111] transition-colors">
+              Ro'yxatdan o'tish
+            </Link>
+            <Link href="/login" className="btn-yellow text-sm">
+              Kirish <ArrowRight className="w-4 h-4 ml-1 inline-block" />
+            </Link>
+          </div>
         </div>
 
         {/* Mobile CTA */}
-        <Link href="/lessons" className="md:hidden btn-yellow text-sm px-4 py-2">
-          Boshlash
+        <Link href="/login" className="md:hidden btn-yellow text-sm px-4 py-2">
+          Kirish
         </Link>
       </nav>
 
