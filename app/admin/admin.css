@@ -1,0 +1,438 @@
+/* ══════════════════════════════════════════════════════
+   Admin Panel – Global CSS
+   Color System:
+   - Background: #0F1117 (deepest dark)
+   - Surface:    #1A1D2E (card dark)
+   - Border:     rgba(255,255,255,0.07)
+   - Accent:     #FFC107 (bright yellow)
+   - Text:       #FFFFFF / #94A3B8
+══════════════════════════════════════════════════════ */
+
+/* ── Root Variables ───────────────────────────────── */
+:root {
+    --adm-bg: #0F1117;
+    --adm-surface: #1A1D2E;
+    --adm-surface2: #21253A;
+    --adm-border: rgba(255, 255, 255, 0.07);
+    --adm-yellow: #FFC107;
+    --adm-yellow-dk: #E6AC00;
+    --adm-yellow-glow: rgba(255, 193, 7, 0.25);
+    --adm-text: #F1F5F9;
+    --adm-muted: #64748B;
+    --adm-sidebar-w: 260px;
+}
+
+/* ── Layout ───────────────────────────────────────── */
+.admin-wrapper {
+    display: flex;
+    min-height: 100vh;
+    background: var(--adm-bg);
+    font-family: 'Inter', ui-sans-serif, system-ui;
+    color: var(--adm-text);
+}
+
+.admin-main {
+    flex: 1;
+    margin-left: var(--adm-sidebar-w);
+    min-height: 100vh;
+    background: var(--adm-bg);
+    overflow-x: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────── */
+.admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--adm-sidebar-w);
+    height: 100vh;
+    background: #13162a;
+    border-right: 1px solid var(--adm-border);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.admin-sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.35rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--adm-border);
+    margin-bottom: 1rem;
+}
+
+.admin-logo-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--adm-yellow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 16px var(--adm-yellow-glow);
+}
+
+/* ── Nav Items ───────────────────────────────────── */
+.admin-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 12px;
+    color: #94A3B8;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.admin-nav-item:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-nav-item.active {
+    background: var(--adm-yellow);
+    color: #111111;
+    box-shadow: 0 4px 18px var(--adm-yellow-glow);
+}
+
+/* ── Topbar ──────────────────────────────────────── */
+.admin-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--adm-border);
+    background: rgba(26, 29, 46, 0.6);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.admin-topbar-title {
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: var(--adm-text);
+}
+
+/* ── Glass Card ──────────────────────────────────── */
+.adm-card {
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border);
+    border-radius: 18px;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.adm-card:hover {
+    border-color: rgba(255, 193, 7, 0.25);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+}
+
+.adm-card-glass {
+    background: rgba(26, 29, 46, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--adm-border);
+    border-radius: 18px;
+}
+
+/* ── Stat Card ───────────────────────────────────── */
+.adm-stat-value {
+    font-size: 2.4rem;
+    font-weight: 900;
+    color: var(--adm-yellow);
+    line-height: 1;
+}
+
+.adm-stat-label {
+    font-size: 0.8rem;
+    color: var(--adm-muted);
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+/* ── Yellow Button ──────────────────────────────── */
+.adm-btn-yellow {
+    background: var(--adm-yellow);
+    color: #111111;
+    font-weight: 800;
+    font-size: 0.85rem;
+    border-radius: 10px;
+    padding: 0.6rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 14px var(--adm-yellow-glow);
+    text-decoration: none;
+}
+
+.adm-btn-yellow:hover {
+    background: var(--adm-yellow-dk);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px var(--adm-yellow-glow);
+}
+
+.adm-btn-ghost {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--adm-text);
+    font-weight: 700;
+    font-size: 0.85rem;
+    border-radius: 10px;
+    padding: 0.6rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--adm-border);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.adm-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 193, 7, 0.3);
+}
+
+/* ── Table ───────────────────────────────────────── */
+.adm-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.adm-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--adm-muted);
+    border-bottom: 1px solid var(--adm-border);
+}
+
+.adm-table td {
+    padding: 0.9rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--adm-text);
+    border-bottom: 1px solid var(--adm-border);
+}
+
+.adm-table tr:last-child td {
+    border-bottom: none;
+}
+
+.adm-table tr:hover td {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* ── Badge ───────────────────────────────────────── */
+.adm-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.adm-badge-yellow {
+    background: rgba(255, 193, 7, 0.15);
+    color: var(--adm-yellow);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.adm-badge-green {
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.adm-badge-blue {
+    background: rgba(96, 165, 250, 0.12);
+    color: #60a5fa;
+    border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+.adm-badge-red {
+    background: rgba(248, 113, 113, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.25);
+}
+
+/* ── Upload Zone ─────────────────────────────────── */
+.adm-upload-zone {
+    border: 2px dashed var(--adm-yellow);
+    border-radius: 16px;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    background: rgba(255, 193, 7, 0.03);
+}
+
+.adm-upload-zone:hover {
+    background: rgba(255, 193, 7, 0.07);
+}
+
+/* ── Progress ────────────────────────────────────── */
+.adm-progress-track {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.adm-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--adm-yellow), #FFD54F);
+    border-radius: 9999px;
+    transition: width 0.6s ease;
+}
+
+/* ── Chart Placeholder ───────────────────────────── */
+.adm-chart-bar {
+    background: rgba(255, 193, 7, 0.25);
+    border-radius: 6px 6px 0 0;
+    flex: 1;
+    min-height: 8px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.adm-chart-bar:hover {
+    background: rgba(255, 193, 7, 0.55);
+}
+
+.adm-chart-bar-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(180deg, #FFC107, #E6AC00);
+    border-radius: 6px 6px 0 0;
+    transition: height 0.8s ease;
+}
+
+/* ── Line Chart ──────────────────────────────────── */
+.adm-line-chart {
+    width: 100%;
+    height: 120px;
+}
+
+/* ── Scrollbar ───────────────────────────────────── */
+.admin-sidebar::-webkit-scrollbar,
+.admin-main::-webkit-scrollbar {
+    width: 4px;
+}
+
+.admin-sidebar::-webkit-scrollbar-track,
+.admin-main::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb,
+.admin-main::-webkit-scrollbar-thumb {
+    background: rgba(255, 193, 7, 0.25);
+    border-radius: 9999px;
+}
+
+/* ── Animations ──────────────────────────────────── */
+@keyframes adm-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.adm-fade-up {
+    animation: adm-fade-up 0.45s ease both;
+}
+
+@keyframes adm-pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 var(--adm-yellow-glow);
+    }
+
+    50% {
+        box-shadow: 0 0 0 8px transparent;
+    }
+}
+
+.adm-pulse-glow {
+    animation: adm-pulse-glow 2.2s ease-in-out infinite;
+}
+
+/* ── Input ───────────────────────────────────────── */
+.adm-input {
+    background: var(--adm-surface2);
+    border: 1px solid var(--adm-border);
+    border-radius: 10px;
+    color: var(--adm-text);
+    padding: 0.6rem 0.9rem;
+    font-size: 0.875rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.adm-input::placeholder {
+    color: var(--adm-muted);
+}
+
+.adm-input:focus {
+    border-color: var(--adm-yellow);
+    box-shadow: 0 0 0 3px var(--adm-yellow-glow);
+}
+
+/* ── Online Dot ──────────────────────────────────── */
+@keyframes online-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
+}
+
+.adm-dot-online {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: online-pulse 1.6s ease-in-out infinite;
+}
+
+.adm-dot-offline {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--adm-muted);
+}
