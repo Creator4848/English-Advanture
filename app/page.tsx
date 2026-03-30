@@ -277,9 +277,14 @@ export default function Home() {
             </div>
             <span className="font-black text-[#111111]">English Adventure</span>
           </div>
-          <p className="text-xs text-gray-400 font-medium">
-            © 2026 English Adventure. Bolalar uchun yaratilgan.
-          </p>
+          <div className="flex items-center gap-6">
+            <p className="text-xs text-gray-400 font-medium">
+              © 2026 English Adventure. Bolalar uchun yaratilgan.
+            </p>
+            <Link href="/admin" className="text-xs text-gray-400 font-bold hover:text-[#FFB800] transition-colors flex items-center gap-1">
+              Admin Panel
+            </Link>
+          </div>
         </div>
       </footer>
 
