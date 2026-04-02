@@ -10,6 +10,7 @@ from fastapi import (
     FastAPI, Depends, HTTPException, UploadFile, File,
     Query, WebSocket, Request
 )
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
 import traceback
