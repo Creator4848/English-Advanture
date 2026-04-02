@@ -30,7 +30,7 @@ from schemas import (
 import auth_service, speech, adaptive, llm_service
 from quiz_service      import QuizService
 from youtube_service   import YouTubeService
-from speaking_service  import speaking_partner_ws, SPEAKING_TOPICS
+# from speaking_service import speaking_partner_ws, SPEAKING_TOPICS (Moved to routes)
 from demo_seed         import seed_demo_data
 
 # ── DB init (Moved to startup for stability) ──────────────────────────────────
@@ -403,8 +403,11 @@ def get_achievements(user_id: int, db: Session = Depends(get_db)):
 # ═════════════════════════════════════════════════════════════════════════════
 @app.get("/api/speaking/topics")
 def speaking_topics():
-    return SPEAKING_TOPICS
-
+    try:
+        from speaking_service import SPEAKING_TOPICS
+        return SPEAKING_TOPICS
+    except ImportError:
+        return []
 
 @app.get("/api/speaking/sessions/{user_id}", response_model=list[SpeakingSessionOut])
 def speaking_sessions(user_id: int, db: Session = Depends(get_db)):
@@ -424,7 +427,13 @@ async def speaking_ws(
     topic_id:  str    = Query("free"),
     db:        Session = Depends(get_db),
 ):
-    await speaking_partner_ws(websocket, user_id, topic_id, db)
+    try:
+        from speaking_service import speaking_partner_ws
+        await speaking_partner_ws(websocket, user_id, topic_id, db)
+    except ImportError as e:
+        await websocket.accept()
+        await websocket.send_json({"type": "error", "message": f"Speaking service import hatosi: {e}"})
+        await websocket.close()
 
 
 # ═════════════════════════════════════════════════════════════════════════════
