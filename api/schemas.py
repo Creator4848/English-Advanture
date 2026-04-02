@@ -45,6 +45,26 @@ class VideoOut(BaseModel):
     class Config:
         from_attributes = True
 
+class VideoCreate(BaseModel):
+    youtube_id:       str
+    title:            str
+    description:      Optional[str] = None
+    thumbnail_url:    Optional[str] = None
+    duration_seconds: Optional[int] = 0
+    difficulty:       int           = 1
+    topic:            Optional[str] = None
+    order_index:      Optional[int] = 0
+
+class VideoUpdate(BaseModel):
+    youtube_id:       Optional[str] = None
+    title:            Optional[str] = None
+    description:      Optional[str] = None
+    thumbnail_url:    Optional[str] = None
+    duration_seconds: Optional[int] = None
+    difficulty:       Optional[int] = None
+    topic:            Optional[str] = None
+    order_index:      Optional[int] = None
+
 
 # ── Video Progress ────────────────────────────────────────────────────────────
 

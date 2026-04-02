@@ -22,10 +22,9 @@ from models import (
 )
 from schemas import (
     RegisterRequest, LoginRequest, TokenResponse,
-    VideoOut, ProgressUpdateRequest, ProgressOut,
-    QuizOut, QuizQuestionOut, QuizOptionOut,
     QuizSubmitRequest, QuizResultOut,
     SpeakingSessionOut, DashboardOut,
+    VideoOut, VideoCreate, VideoUpdate
 )
 import auth_service, speech, adaptive, llm_service
 from quiz_service      import QuizService
@@ -211,6 +210,41 @@ async def sync_videos(
     """Sync videos from YouTube channel to DB."""
     result = await yt_svc.sync_channel_to_db(db, channel_id, max_results)
     return result
+
+
+@app.post("/api/videos", response_model=VideoOut)
+def create_video(body: VideoCreate, db: Session = Depends(get_db)):
+    video = Video(**body.dict())
+    db.add(video)
+    db.commit()
+    db.refresh(video)
+    return video
+
+
+@app.put("/api/videos/{video_id}", response_model=VideoOut)
+def update_video(video_id: int, body: VideoUpdate, db: Session = Depends(get_db)):
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(404, "Video not found")
+    
+    update_data = body.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(video, key, value)
+    
+    db.commit()
+    db.refresh(video)
+    return video
+
+
+@app.delete("/api/videos/{video_id}")
+def delete_video(video_id: int, db: Session = Depends(get_db)):
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(404, "Video not found")
+    
+    db.delete(video)
+    db.commit()
+    return {"status": "deleted", "video_id": video_id}
 
 
 # ── Video Progress ─────────────────────────────────────────────────────────────
