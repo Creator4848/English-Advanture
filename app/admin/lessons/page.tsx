@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { Plus, Search, Video, Eye, Edit, Trash2, CheckCircle, BarChart2, X, Link as LinkIcon, Loader2 } from "lucide-react";
 
