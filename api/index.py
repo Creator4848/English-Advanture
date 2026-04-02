@@ -463,7 +463,10 @@ async def speaking_chat_http(
             "scores":          result["scores"],
         }
     except Exception as e:
-        raise HTTPException(500, str(e))
+        import traceback
+        err_msg = f"Backend xatosi: {str(e)}\n{traceback.format_exc()}"
+        print(err_msg)
+        raise HTTPException(500, err_msg)
 
 
 @app.post("/api/speaking/voice")
@@ -506,7 +509,10 @@ async def speaking_voice_http(
             "scores":          result["scores"],
         }
     except Exception as e:
-        raise HTTPException(500, str(e))
+        import traceback
+        err_msg = f"Backend xatosi: {str(e)}\n{traceback.format_exc()}"
+        print(err_msg)
+        raise HTTPException(500, err_msg)
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -529,7 +535,10 @@ async def analyze_speech(
         result = await analyzer.analyze_pronunciation(temp_path, target_text)
         return result
     except Exception as e:
-        raise HTTPException(500, str(e))
+        import traceback
+        err_msg = f"Backend xatosi: {str(e)}\n{traceback.format_exc()}"
+        print(err_msg)
+        raise HTTPException(500, err_msg)
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
