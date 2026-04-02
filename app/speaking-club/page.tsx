@@ -165,7 +165,7 @@ export default function SpeakingClubPage() {
                     })
                 });
                 const data = await res.json();
-                if (data.ai_text) {
+                if (res.ok && data.ai_text) {
                     setMessages((prev) => [
                         ...prev,
                         {
@@ -175,12 +175,12 @@ export default function SpeakingClubPage() {
                         },
                     ]);
                 } else {
-                    throw new Error("No response");
+                    throw new Error(data.detail || "Server xatosi");
                 }
-            } catch (err) {
+            } catch (err: any) {
                 setMessages((prev) => [
                     ...prev,
-                    { role: "assistant", content: "Kechirasiz, serverda muammo yuz berdi. Iltimos, keyinroq urinib ko'ring." },
+                    { role: "assistant", content: `Xatoli: ${err.message}` },
                 ]);
             }
         }
@@ -214,16 +214,18 @@ export default function SpeakingClubPage() {
                                 body: formData
                             });
                             const data = await res.json();
-                            if (data.ai_text) {
+                            if (res.ok && data.ai_text) {
                                 setMessages((prev) => [
                                     ...prev,
                                     { role: "user", content: `🎙️ ${data.user_transcript}`, transcript: data.user_transcript },
                                     { role: "assistant", content: data.ai_text, scores: data.scores },
                                 ]);
                                 setWsStatus("HTTP rejimida ✨");
+                            } else {
+                                throw new Error(data.detail || "Server xatosi");
                             }
-                        } catch (err) {
-                            setMessages((prev) => [...prev, { role: "assistant", content: "Ovozli xabarni yuborishda xatolik yuz berdi." }]);
+                        } catch (err: any) {
+                            setMessages((prev) => [...prev, { role: "assistant", content: `Voice Error: ${err.message}` }]);
                         }
                     }
                     stream.getTracks().forEach((t) => t.stop());
