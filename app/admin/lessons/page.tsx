@@ -35,10 +35,15 @@ export default function AdminLessonsPage() {
         setLoading(true);
         try {
             const res = await fetch("/api/videos");
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Server xatosi (${res.status}): ${text.substring(0, 100)}`);
+            }
             const data = await res.json();
             setLessons(data);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Failed to fetch lessons:", err);
+            alert(`Darslarni yuklashda xatolik: ${err.message}`);
         } finally {
             setLoading(false);
         }
@@ -78,7 +83,14 @@ export default function AdminLessonsPage() {
                 body: JSON.stringify(payload)
             });
 
-            const responseData = await res.json();
+            let responseData;
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                responseData = await res.json();
+            } else {
+                const errorText = await res.text();
+                throw new Error(`Server JSON qaytarmadi (${res.status}). Xabar: ${errorText.substring(0, 200)}...`);
+            }
 
             if (res.ok) {
                 setIsModalOpen(false);
@@ -90,7 +102,7 @@ export default function AdminLessonsPage() {
             }
         } catch (err: any) {
             console.error("Save error:", err);
-            alert(`Ulanishda xatolik: ${err.message}`);
+            alert(`Xatolik: ${err.message}`);
         } finally {
             setSaving(false);
         }
