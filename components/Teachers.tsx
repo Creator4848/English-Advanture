@@ -7,48 +7,48 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 const TEACHERS = [
     {
         id: 1,
-        language: "Nemis tili",
-        flag: "🇩🇪",
-        title: "Nemis tili",
+        language: "Ingliz tili",
+        flag: "🇬🇧",
+        title: "Boshlang'ich Ingliz tili",
         instructor: "Feruza Uralova",
-        role: "O`qituvchi",
-        avatar: "https://i.pravatar.cc/150?u=feruza",
+        role: "O'qituvchi",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Feruza",
     },
     {
         id: 2,
-        language: "Nemis tili",
-        flag: "🇩🇪",
-        title: "Nemis tilidan intensiv darslar",
+        language: "Ingliz tili",
+        flag: "🇬🇧",
+        title: "Ingliz tilidan intensiv darslar",
         instructor: "Dilfuza Latipova",
-        role: "O`qituvchi",
-        avatar: "https://i.pravatar.cc/150?u=dilfuza",
+        role: "O'qituvchi",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Dilfuza",
     },
     {
         id: 3,
-        language: "Fransuz tili",
-        flag: "🇫🇷",
-        title: "Fransuz tili",
+        language: "Ingliz tili",
+        flag: "🇬🇧",
+        title: "Speaking Club Kids",
         instructor: "Gulfiya Rahimova",
-        role: "O`qituvchi",
-        avatar: "https://i.pravatar.cc/150?u=gulfiya",
+        role: "O'qituvchi",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Gulfiya",
     },
     {
         id: 4,
-        language: "Xitoy tili",
-        flag: "🇨🇳",
-        title: "Xitoy tili",
+        language: "Ingliz tili",
+        flag: "🇬🇧",
+        title: "Grammatika asoslari",
         instructor: "Nigina Rasulova",
-        role: "O`qituvchi",
-        avatar: "https://i.pravatar.cc/150?u=nigina",
+        role: "O'qituvchi",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Nigina",
     },
     {
         id: 5,
-        language: "Italyan tili",
-        flag: "🇮🇹",
-        title: "Italyan tili",
+        language: "Ingliz tili",
+        flag: "🇬🇧",
+        title: "Ingliz tili (Advanced)",
         instructor: "Bahora Ergashova",
-        role: "O`qituvchi",
-        avatar: "https://i.pravatar.cc/150?u=bahora",
+        role: "O'qituvchi",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Bahora",
     },
 ];
 
@@ -69,10 +69,19 @@ export default function Teachers() {
 
     return (
         <section className="py-20 px-6 max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+                <h2 className="text-4xl md:text-5xl font-black text-[#111111] mb-3">
+                    Bizning <span className="text-[#FFB800]">O'qituvchilar</span>
+                </h2>
+                <p className="text-gray-400 font-medium max-w-xl mx-auto">
+                    Malakali mutaxassislar yordamida ingliz tilini oson va qiziqarli o'rganing.
+                </p>
+            </div>
+
             <div className="relative">
                 <div
                     ref={scrollRef}
-                    className="flex gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-8"
+                    className="flex gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-8 px-4"
                 >
                     {TEACHERS.map((teacher) => (
                         <div
@@ -92,13 +101,13 @@ export default function Teachers() {
                             </h3>
 
                             <div className="mt-auto flex flex-col items-center">
-                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-md mb-3">
+                                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md mb-3 bg-gray-100 relative">
                                     <Image
                                         src={teacher.avatar}
                                         alt={teacher.instructor}
-                                        width={48}
-                                        height={48}
-                                        className="object-cover w-full h-full"
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
                                     />
                                 </div>
                                 <div className="font-bold text-sm text-[#111111]">
@@ -113,18 +122,18 @@ export default function Teachers() {
                 </div>
 
                 {/* Navigation Buttons */}
-                <div className="flex justify-center gap-4 mt-4">
+                <div className="flex justify-center gap-4 mt-8">
                     <button
                         onClick={scrollLeft}
                         className="w-12 h-12 rounded-xl flex items-center justify-center border-2 border-gray-100 text-gray-400 hover:border-[#FFB800] hover:text-[#FFB800] hover:bg-[#FFF3CC] transition-all"
-                        aria-label="Previous teachers"
+                        aria-label="Oldingi o'qituvchilar"
                     >
                         <ChevronLeft className="w-6 h-6" />
                     </button>
                     <button
                         onClick={scrollRight}
                         className="w-12 h-12 rounded-xl flex items-center justify-center border-2 border-[#FFB800] text-[#FFB800] hover:bg-[#FFB800] hover:text-white transition-all shadow-sm"
-                        aria-label="Next teachers"
+                        aria-label="Keyingi o'qituvchilar"
                     >
                         <ChevronRight className="w-6 h-6" />
                     </button>
