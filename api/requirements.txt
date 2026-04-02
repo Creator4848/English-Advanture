@@ -1,14 +1,13 @@
-fastapi
+fastapi>=0.100.0
 uvicorn
 sqlalchemy
 python-dotenv
 openai
 httpx
-passlib
+passlib[bcrypt]
 python-jose[cryptography]
 redis
 pydantic[email]>=2.0.0
 python-multipart
-bcrypt
 groq
 

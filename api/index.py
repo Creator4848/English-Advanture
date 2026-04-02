@@ -24,14 +24,24 @@ _INIT_ERROR = None
 _INIT_TRACE = None
 
 try:
-    # Attempt to import all dependencies
+    # Checkpoint 1: Groq
+    print("DEBUG: Checkpoint 1 - Groq")
     from groq import Groq
+    
+    # Checkpoint 2: Database
+    print("DEBUG: Checkpoint 2 - Database")
     from database import get_db, engine, redis_set_progress, redis_get_progress, DATABASE_URL
+    
+    # Checkpoint 3: Models
+    print("DEBUG: Checkpoint 3 - Models")
     import models
     from models import (
         User, Video, Quiz, QuizQuestion, QuizResult,
         VideoProgress, SpeakingSession, Achievement, UserAchievement,
     )
+    
+    # Checkpoint 4: Schemas
+    print("DEBUG: Checkpoint 4 - Schemas")
     from schemas import (
         RegisterRequest, LoginRequest, TokenResponse,
         VideoOut, VideoCreate, VideoUpdate,
@@ -39,11 +49,16 @@ try:
         QuizOut, QuizSubmitRequest, QuizResultOut,
         SpeakingSessionOut, DashboardOut
     )
+    
+    # Checkpoint 5: Auth & Seed
+    print("DEBUG: Checkpoint 5 - Auth & Seed")
     import auth_service
     from demo_seed import seed_demo_data
+    print("DEBUG: Checkpoint 6 - All imports successful")
 except Exception as e:
     _INIT_ERROR = str(e)
     _INIT_TRACE = traceback.format_exc()
+    print(f"DEBUG: Initialization failed: {_INIT_ERROR}")
 
 SPEAKING_TOPICS = [
     {"id": "animals",    "label": "Animals 🐾",  "prompt": "Talk about favorite animals"},
