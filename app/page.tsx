@@ -7,6 +7,7 @@ import {
   BookOpen, Mic, Star, Trophy, ArrowRight,
   Play, Zap, CheckCircle, ChevronRight
 } from "lucide-react";
+import Teachers from "@/components/Teachers";
 
 /* ── Data ──────────────────────────────────────────────────────────── */
 const FEATURES = [
@@ -189,6 +190,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── TEACHERS ───────────────────────────────────────────── */}
+      <Teachers />
 
       {/* ── FEATURES ───────────────────────────────────────────── */}
       <section className="py-24 px-6 lg:px-20 max-w-7xl mx-auto">
