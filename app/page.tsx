@@ -24,7 +24,7 @@ const FEATURES = [
   {
     icon: <Mic className="w-7 h-7 text-[#FFB800]" />,
     title: "AI Speaking Club",
-    desc: "Alex nomli AI qahramon bilan real vaqtda inglizcha suhbatlashing. Whisper + GPT-4o-mini.",
+    desc: "Alex nomli AI qahramon bilan real vaqtda inglizcha suhbatlashing. Whisper + Llama-3.3 (Groq).",
   },
   {
     icon: <Trophy className="w-7 h-7 text-[#FFB800]" />,
