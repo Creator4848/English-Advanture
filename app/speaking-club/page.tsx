@@ -151,7 +151,7 @@ export default function SpeakingClubPage() {
             // HTTP fallback for Vercel
             setWsStatus("HTTP rejimida ✨");
             try {
-                const res = await fetch(`${API_URL}/speaking/chat`, {
+                const res = await fetch(`${API_URL}/chat`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -209,7 +209,7 @@ export default function SpeakingClubPage() {
                                 role: m.role === "assistant" ? "assistant" : "user",
                                 content: m.content
                             })));
-                            const res = await fetch(`${API_URL}/speaking/voice?user_id=${USER_ID}&topic_id=${topic.id}&history=${encodeURIComponent(historyJson)}`, {
+                            const res = await fetch(`${API_URL}/voice?user_id=${USER_ID}&topic_id=${topic.id}&history=${encodeURIComponent(historyJson)}`, {
                                 method: "POST",
                                 body: formData
                             });
