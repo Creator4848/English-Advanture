@@ -17,6 +17,9 @@ if DATABASE_URL.startswith("postgres://"):
 engine_kwargs: dict = {}
 if DATABASE_URL.startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Add timeout for PostgreSQL
+    engine_kwargs["connect_args"] = {"connect_timeout": 5}
 
 engine = create_engine(DATABASE_URL, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

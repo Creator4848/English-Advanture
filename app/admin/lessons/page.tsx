@@ -37,12 +37,17 @@ export default function AdminLessonsPage() {
             const res = await fetch("/api/videos");
             if (!res.ok) {
                 const text = await res.text();
-                throw new Error(`Server xatosi (${res.status}): ${text.substring(0, 100)}`);
+                // If the response is HTML, it's likely a Vercel/Next.js error page
+                if (text.includes("<!DOCTYPE html>")) {
+                    throw new Error(`Server JSON emas, HTML qaytardi (${res.status}). Bu odatda Vercel/FastAPI xatosi. Xabar: ${text.substring(0, 300)}...`);
+                }
+                throw new Error(`Server xatosi (${res.status}): ${text.substring(0, 150)}`);
             }
             const data = await res.json();
             setLessons(data);
         } catch (err: any) {
             console.error("Failed to fetch lessons:", err);
+            // Show more detailed error info
             alert(`Darslarni yuklashda xatolik: ${err.message}`);
         } finally {
             setLoading(false);
@@ -83,22 +88,24 @@ export default function AdminLessonsPage() {
                 body: JSON.stringify(payload)
             });
 
-            let responseData;
-            const contentType = res.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                responseData = await res.json();
-            } else {
-                const errorText = await res.text();
-                throw new Error(`Server JSON qaytarmadi (${res.status}). Xabar: ${errorText.substring(0, 200)}...`);
-            }
-
             if (res.ok) {
                 setIsModalOpen(false);
                 setEditingLesson(null);
                 setFormData({ title: "", youtube_url: "", topic: "General", difficulty: 1, description: "" });
                 fetchLessons();
             } else {
-                alert(`Xatolik: ${responseData.detail || "Saqlash b'lmadi"}`);
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    const responseData = await res.json();
+                    alert(`Xatolik: ${responseData.detail || "Saqlash bo'lmadi"}`);
+                } else {
+                    const errorText = await res.text();
+                    if (errorText.includes("<!DOCTYPE html>")) {
+                        alert(`Server JSON emas, HTML qaytardi (${res.status}). Xabar: ${errorText.substring(0, 300)}...`);
+                    } else {
+                        alert(`Xatolik: ${errorText.substring(0, 200)}`);
+                    }
+                }
             }
         } catch (err: any) {
             console.error("Save error:", err);

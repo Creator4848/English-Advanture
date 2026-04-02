@@ -7,7 +7,8 @@ httpx
 passlib
 python-jose[cryptography]
 redis
-pydantic[email]
+pydantic[email]>=2.0.0
 python-multipart
+bcrypt
 groq
 

@@ -1,8 +1,10 @@
-"""
-index.py  –  English Adventure FastAPI main entrypoint
-All routers registered here: Auth, Videos, Quiz, Progress, Speaking Club.
-"""
 import os
+import sys
+# Path hack for Vercel to find local modules in the 'api' directory
+sys.path.append(os.path.dirname(__file__))
+
+print(f"DEBUG: Starting English Adventure API. CWD: {os.getcwd()}, FILE: {__file__}")
+
 import shutil
 from typing import Optional
 
@@ -27,8 +29,15 @@ from models import (
     User, Video, Quiz, QuizQuestion, QuizResult,
     VideoProgress, SpeakingSession, Achievement, UserAchievement,
 )
-# from schemas import ... (Moved inside routes for stability)
-# import auth_service, speech, adaptive, llm_service (Moved inside routes)
+from schemas import (
+    RegisterRequest, LoginRequest, TokenResponse,
+    VideoOut, VideoCreate, VideoUpdate,
+    ProgressUpdateRequest, ProgressOut,
+    QuizOut, QuizSubmitRequest, QuizResultOut,
+    SpeakingSessionOut, DashboardOut
+)
+import auth_service
+from demo_seed import seed_demo_data
 
 SPEAKING_TOPICS = [
     {"id": "animals",    "label": "Animals 🐾",  "prompt": "Talk about favorite animals"},
@@ -56,32 +65,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class GlobalExceptionMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        try:
-            return await call_next(request)
-        except Exception as e:
-            err_msg = f"CRITICAL_BACKEND_ERROR: {str(e)}\n{traceback.format_exc()}"
-            print(err_msg)
-            return JSONResponse(
-                status_code=500,
-                content={"detail": err_msg, "status": "error"}
-            )
+# ── Error Handling ────────────────────────────────────────────────────────────
 
-app.add_middleware(GlobalExceptionMiddleware)
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    print(f"HTTP_EXCEPTION: {exc.detail}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "status": "error"}
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    err_msg = f"CRITICAL_BACKEND_ERROR: {str(exc)}\n{traceback.format_exc()}"
+    print(err_msg)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": err_msg, "status": "error"}
+    )
 
 # ── DB init (Moved to startup for stability) ──────────────────────────────────
 @app.on_event("startup")
 async def startup_event():
+    print("DEBUG: Startup event triggered")
     try:
+        print(f"DEBUG: Connecting to DB: {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else DATABASE_URL}")
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        print("✅ DB connection success")
         models.Base.metadata.create_all(bind=engine)
         print("✅ Database tables created")
+    except Exception as e:
+        print(f"⚠️  DB startup error: {e}")
+        traceback.print_exc()
+
+    try:
         from database import SessionLocal
         with SessionLocal() as db:
             seed_demo_data(db)
             print("✅ Demo data seeded")
     except Exception as e:
-        print(f"⚠️  DB startup error: {e}")
+        print(f"⚠️  DB seeding error: {e}")
+        traceback.print_exc()
 
 # ── Service singletons (Lazy loading for health check stability) ──────────────
 _voice_analyzer = None
@@ -146,6 +171,25 @@ async def health_check():
         "youtube_key":"Set" if os.getenv("YOUTUBE_API_KEY") else "Not Set",
         "env":        os.getenv("VERCEL_ENV", "local"),
     }
+
+@app.get("/api/debug")
+async def debug_info():
+    import sys
+    return {
+        "sys.path": sys.path,
+        "cwd":      os.getcwd(),
+        "env":      {k: v for k, v in os.environ.items() if "KEY" not in k and "SECRET" not in k and "TOKEN" not in k},
+        "python":   sys.version,
+    }
+
+@app.get("/api/test_db")
+async def test_db(db: Session = Depends(get_db)):
+    """Explicit DB test route."""
+    try:
+        result = db.execute(text("SELECT count(*) FROM videos")).scalar()
+        return {"status": "success", "video_count": result}
+    except Exception as e:
+        return {"status": "error", "message": str(e), "trace": traceback.format_exc()}
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -231,6 +275,7 @@ async def sync_videos(
     db:          Session        = Depends(get_db),
 ):
     """Sync videos from YouTube channel to DB."""
+    yt_svc = get_yt_svc()
     result = await yt_svc.sync_channel_to_db(db, channel_id, max_results)
     return result
 
