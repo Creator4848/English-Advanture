@@ -7,11 +7,11 @@
   "rewrites": [
     {
       "source": "/api/ping",
-      "destination": "/api/ping.py"
+      "destination": "api/ping.py"
     },
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.py"
+      "source": "/api/:path*",
+      "destination": "api/index.py"
     }
   ]
 }
