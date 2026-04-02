@@ -6,13 +6,18 @@ Real-time WebSocket session using Groq Whisper + Llama-3.3-70b.
 import json
 import os
 import time
+import asyncio
 from fastapi import WebSocket, WebSocketDisconnect
-from groq import AsyncGroq
+from groq import Groq
 from sqlalchemy.orm import Session
 from models import SpeakingSession, User
 
-# Initialize Groq Client
-client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY", ""))
+# Initialize Groq Client (Sync)
+# We use sync client to match llm_service.py which is confirmed working.
+api_key = os.getenv("GROQ_API_KEY", "")
+client = None
+if api_key:
+    client = Groq(api_key=api_key)
 
 SYSTEM_PROMPT = """You are Alex 🌟, a friendly and encouraging English tutor for elementary school children (ages 6–12).
 
@@ -43,6 +48,11 @@ async def speaking_partner_ws(
     db: Session,
 ) -> None:
     await websocket.accept()
+
+    if not client:
+        await websocket.send_json({"type": "error", "message": "Backendda GROQ_API_KEY topilmadi."})
+        await websocket.close()
+        return
 
     # Resolve topic
     topic_obj   = next((t for t in SPEAKING_TOPICS if t["id"] == topic_id), SPEAKING_TOPICS[-1])
@@ -84,32 +94,29 @@ async def speaking_partner_ws(
 
             # ── Audio blob → Whisper ─────────────────────────────────────
             if "bytes" in data and data["bytes"]:
-                if not client.api_key:
-                    await websocket.send_json({"type": "error", "message": "Groq API key not configured"})
-                    continue
-                
                 # Save temp audio file
                 temp_filename = f"temp_audio_{user_id}_{int(time.time())}.webm"
                 with open(temp_filename, "wb") as f:
                     f.write(data["bytes"])
                 
                 try:
-                    # Transcribe using Groq Whisper-large-v3
+                    # Transcribe using Groq Whisper-large-v3 (wrapped in thread for async safety)
                     with open(temp_filename, "rb") as audio_file:
-                        transcript_resp = await client.audio.transcriptions.create(
+                        loop = asyncio.get_event_loop()
+                        transcript_resp = await loop.run_in_executor(None, lambda: client.audio.transcriptions.create(
                             model="whisper-large-v3",
                             file=audio_file,
                             response_format="text"
-                        )
+                        ))
                     user_text = transcript_resp.strip()
                 except Exception as e:
-                    await websocket.send_json({"type": "error", "message": f"Transcription failed: {e}"})
+                    await websocket.send_json({"type": "error", "message": f"Transcription hatosi: {e}"})
                     continue
                 finally:
                     if os.path.exists(temp_filename):
                         os.remove(temp_filename)
 
-            # ── Text message fallback ────────────────────────────────────
+            # ── Text message ─────────────────────────────────────────────
             elif "text" in data:
                 try:
                     payload   = json.loads(data["text"])
@@ -125,7 +132,7 @@ async def speaking_partner_ws(
             history.append({"role": "user", "content": user_text})
             transcript_log.append({"role": "user", "content": user_text, "ts": time.time()})
 
-            # ── Llama-3.3-70b-versatile reply ────────────────────────────
+            # ── AI reply stage ───────────────────────────────────────────
             system_prompt = f"""
             You are Alex, a friendly English tutor for children. 
             Topic: {topic_name}. 
@@ -147,21 +154,21 @@ async def speaking_partner_ws(
             scores = {"fluency": 7, "grammar": 7, "vocab": 7} # defaults
             
             try:
-                chat_completion = await client.chat.completions.create(
+                loop = asyncio.get_event_loop()
+                chat_completion = await loop.run_in_executor(None, lambda: client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_text}
                     ],
                     response_format={"type": "json_object"}
-                )
+                ))
                 res_data = json.loads(chat_completion.choices[0].message.content)
                 ai_reply = res_data.get("reply", "")
                 scores = res_data.get("scores", {"fluency": 7, "grammar": 7, "vocab": 7})
             except Exception as e:
-                # Fallback on failure
                 ai_reply = f"That's interesting! Tell me more about your ideas on {topic_name}."
-                print(f"DEBUG Error: {e}")
+                print(f"DEBUG AI Error: {e}")
 
             history.append({"role": "assistant", "content": ai_reply})
             transcript_log.append({"role": "assistant", "content": ai_reply, "ts": time.time()})
@@ -181,32 +188,33 @@ async def speaking_partner_ws(
     except WebSocketDisconnect:
         pass
 
-    # ── Save session to DB ───────────────────────────────────────────────
+    # ── Final save logic ────────────────────────────────────────────────
     finally:
         duration = int(time.time() - session_start)
         if turn_count > 0:
             avg = lambda total: int(total / turn_count)
-            session_entry = SpeakingSession(
-                user_id       = user_id,
-                topic         = topic_label,
-                transcript    = transcript_log,
-                fluency_score = avg(total_fluency),
-                grammar_score = avg(total_grammar),
-                vocab_score   = avg(total_vocab),
-                ai_feedback   = f"Great effort! You completed {turn_count} turns on {topic_label}.",
-                duration_sec  = duration,
-            )
-            db.add(session_entry)
-            
-            # Award XP for speaking practice
-            user = db.query(User).filter(User.id == user_id).first()
-            if user:
-                xp_gain = turn_count * 10
-                user.xp    += xp_gain
-                user.coins += xp_gain // 5
-                user.level  = (user.xp // 1000) + 1
-            
             try:
+                session_entry = SpeakingSession(
+                    user_id       = user_id,
+                    topic         = topic_label,
+                    transcript    = transcript_log,
+                    fluency_score = avg(total_fluency),
+                    grammar_score = avg(total_grammar),
+                    vocab_score   = avg(total_vocab),
+                    ai_feedback   = f"Great effort! You completed {turn_count} turns on {topic_label}.",
+                    duration_sec  = duration,
+                )
+                db.add(session_entry)
+                
+                # Award XP
+                user = db.query(User).filter(User.id == user_id).first()
+                if user:
+                    xp_gain = turn_count * 10
+                    user.xp    += xp_gain
+                    user.coins += xp_gain // 5
+                    user.level  = (user.xp // 1000) + 1
+                
                 db.commit()
-            except Exception:
+            except Exception as e:
                 db.rollback()
+                print(f"DEBUG DB Error: {e}")
