@@ -26,17 +26,8 @@ from models import (
     User, Video, Quiz, QuizQuestion, QuizResult,
     VideoProgress, SpeakingSession, Achievement, UserAchievement,
 )
-from schemas import (
-    RegisterRequest, LoginRequest, TokenResponse,
-    QuizSubmitRequest, QuizResultOut,
-    SpeakingSessionOut, DashboardOut,
-    VideoOut, VideoCreate, VideoUpdate
-)
-import auth_service, speech, adaptive, llm_service
-from quiz_service      import QuizService
-from youtube_service   import YouTubeService
-# from speaking_service import speaking_partner_ws, SPEAKING_TOPICS (Moved to routes)
-from demo_seed         import seed_demo_data
+# from schemas import ... (Moved inside routes for stability)
+# import auth_service, speech, adaptive, llm_service (Moved inside routes)
 
 SPEAKING_TOPICS = [
     {"id": "animals",    "label": "Animals 🐾",  "prompt": "Talk about favorite animals"},
@@ -506,6 +497,11 @@ async def speaking_ws(
         await websocket.send_json({"type": "error", "message": f"Speaking service import hatosi: {e}"})
         await websocket.close()
 
+
+@app.get("/api/ping_safe")
+def ping_safe():
+    """Dependency-free ping for environment verification."""
+    return {"status": "ok", "message": "Python environment is healthy", "time": time.time()}
 
 @app.get("/api/ping")
 def ping():
