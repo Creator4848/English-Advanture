@@ -9,38 +9,41 @@ if current_file_dir not in sys.path:
 print(f"DEBUG: Starting English Adventure API. CWD: {os.getcwd()}, FILE: {__file__}, PATH: {sys.path}")
 
 import shutil
-from typing import Optional
-
-from fastapi import (
-    FastAPI, Depends, HTTPException, UploadFile, File,
-    Query, WebSocket, Request
-)
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi.responses import JSONResponse
 import traceback
+from typing import Optional
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Query, WebSocket, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
 import json
 import time
-from groq import Groq
 
-from database import get_db, engine, redis_set_progress, redis_get_progress
-import models
-from models import (
-    User, Video, Quiz, QuizQuestion, QuizResult,
-    VideoProgress, SpeakingSession, Achievement, UserAchievement,
-)
-from schemas import (
-    RegisterRequest, LoginRequest, TokenResponse,
-    VideoOut, VideoCreate, VideoUpdate,
-    ProgressUpdateRequest, ProgressOut,
-    QuizOut, QuizSubmitRequest, QuizResultOut,
-    SpeakingSessionOut, DashboardOut
-)
-import auth_service
-from demo_seed import seed_demo_data
+_INIT_ERROR = None
+_INIT_TRACE = None
+
+try:
+    # Attempt to import all dependencies
+    from groq import Groq
+    from database import get_db, engine, redis_set_progress, redis_get_progress, DATABASE_URL
+    import models
+    from models import (
+        User, Video, Quiz, QuizQuestion, QuizResult,
+        VideoProgress, SpeakingSession, Achievement, UserAchievement,
+    )
+    from schemas import (
+        RegisterRequest, LoginRequest, TokenResponse,
+        VideoOut, VideoCreate, VideoUpdate,
+        ProgressUpdateRequest, ProgressOut,
+        QuizOut, QuizSubmitRequest, QuizResultOut,
+        SpeakingSessionOut, DashboardOut
+    )
+    import auth_service
+    from demo_seed import seed_demo_data
+except Exception as e:
+    _INIT_ERROR = str(e)
+    _INIT_TRACE = traceback.format_exc()
 
 SPEAKING_TOPICS = [
     {"id": "animals",    "label": "Animals 🐾",  "prompt": "Talk about favorite animals"},
@@ -67,6 +70,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── Bootstrapper Error Handler ───────────────────────────────────────────────
+if _INIT_ERROR:
+    @app.get("/{full_path:path}")
+    @app.post("/{full_path:path}")
+    @app.put("/{full_path:path}")
+    @app.delete("/{full_path:path}")
+    async def init_error_handler(full_path: str):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "CRITICAL_INITIALIZATION_FAILURE",
+                "message": _INIT_ERROR,
+                "traceback": _INIT_TRACE,
+                "path": full_path,
+                "sys_path": sys.path,
+                "cwd": os.getcwd()
+            }
+        )
 
 # ── Error Handling ────────────────────────────────────────────────────────────
 
