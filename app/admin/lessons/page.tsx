@@ -21,6 +21,7 @@ export default function AdminLessonsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+    const [saving, setSaving] = useState(false);
 
     const [formData, setFormData] = useState({
         title: "",
@@ -55,6 +56,7 @@ export default function AdminLessonsPage() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSaving(true);
         const yid = extractYoutubeId(formData.youtube_url);
         const payload = {
             youtube_id: yid,
@@ -76,14 +78,21 @@ export default function AdminLessonsPage() {
                 body: JSON.stringify(payload)
             });
 
+            const responseData = await res.json();
+
             if (res.ok) {
                 setIsModalOpen(false);
                 setEditingLesson(null);
                 setFormData({ title: "", youtube_url: "", topic: "General", difficulty: 1, description: "" });
                 fetchLessons();
+            } else {
+                alert(`Xatolik: ${responseData.detail || "Saqlash b'lmadi"}`);
             }
-        } catch (err) {
-            alert("Saqlashda xatolik!");
+        } catch (err: any) {
+            console.error("Save error:", err);
+            alert(`Ulanishda xatolik: ${err.message}`);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -293,7 +302,9 @@ export default function AdminLessonsPage() {
 
                             <div className="pt-4 flex gap-3">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-3 rounded-xl font-black text-gray-400 bg-white/5 hover:bg-white/10 transition-all">Bekor qilish</button>
-                                <button type="submit" className="flex-1 px-6 py-3 rounded-xl font-black text-[#111111] bg-[#FFC107] hover:bg-[#FFD54F] shadow-lg shadow-[#FFC107]/20 transition-all">Saqlash</button>
+                                <button type="submit" disabled={saving} className="flex-1 px-6 py-3 rounded-xl font-black text-[#111111] bg-[#FFC107] hover:bg-[#FFD54F] shadow-lg shadow-[#FFC107]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {saving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Saqlash"}
+                                </button>
                             </div>
                         </form>
                     </div>

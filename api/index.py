@@ -11,7 +11,9 @@ from fastapi import (
     Query, WebSocket
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
 
 from database import get_db, engine, redis_set_progress, redis_get_progress
@@ -214,11 +216,18 @@ async def sync_videos(
 
 @app.post("/api/videos", response_model=VideoOut)
 def create_video(body: VideoCreate, db: Session = Depends(get_db)):
-    video = Video(**body.dict())
-    db.add(video)
-    db.commit()
-    db.refresh(video)
-    return video
+    try:
+        video = Video(**body.dict())
+        db.add(video)
+        db.commit()
+        db.refresh(video)
+        return video
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Bu YouTube ID ga ega dars allaqachon mavjud!")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.put("/api/videos/{video_id}", response_model=VideoOut)
