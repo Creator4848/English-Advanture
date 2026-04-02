@@ -1,9 +1,12 @@
 import os
 import sys
-# Path hack for Vercel to find local modules in the 'api' directory
-sys.path.append(os.path.dirname(__file__))
 
-print(f"DEBUG: Starting English Adventure API. CWD: {os.getcwd()}, FILE: {__file__}")
+# Path hack for Vercel to find local modules in the 'api' directory
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+if current_file_dir not in sys.path:
+    sys.path.append(current_file_dir)
+
+print(f"DEBUG: Starting English Adventure API. CWD: {os.getcwd()}, FILE: {__file__}, PATH: {sys.path}")
 
 import shutil
 from typing import Optional
