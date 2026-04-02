@@ -33,20 +33,6 @@ from youtube_service   import YouTubeService
 # from speaking_service import speaking_partner_ws, SPEAKING_TOPICS (Moved to routes)
 from demo_seed         import seed_demo_data
 
-# ── DB init (Moved to startup for stability) ──────────────────────────────────
-@app.on_event("startup")
-async def startup_event():
-    try:
-        models.Base.metadata.create_all(bind=engine)
-        print("✅ Database tables created")
-        from database import SessionLocal
-        with SessionLocal() as db:
-            seed_demo_data(db)
-            print("✅ Demo data seeded")
-    except Exception as e:
-        print(f"⚠️  DB startup error: {e}")
-
-
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="English Adventure API",
@@ -60,7 +46,21 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_headers=["*"],
 )
+
+# ── DB init (Moved to startup for stability) ──────────────────────────────────
+@app.on_event("startup")
+async def startup_event():
+    try:
+        models.Base.metadata.create_all(bind=engine)
+        print("✅ Database tables created")
+        from database import SessionLocal
+        with SessionLocal() as db:
+            seed_demo_data(db)
+            print("✅ Demo data seeded")
+    except Exception as e:
+        print(f"⚠️  DB startup error: {e}")
 
 # ── Service singletons (Lazy loading for health check stability) ──────────────
 _voice_analyzer = None
