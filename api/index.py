@@ -15,6 +15,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
+import json
+import time
+from groq import Groq
 
 from database import get_db, engine, redis_set_progress, redis_get_progress
 import models
@@ -33,6 +36,17 @@ from quiz_service      import QuizService
 from youtube_service   import YouTubeService
 # from speaking_service import speaking_partner_ws, SPEAKING_TOPICS (Moved to routes)
 from demo_seed         import seed_demo_data
+
+SPEAKING_TOPICS = [
+    {"id": "animals",    "label": "Animals 🐾",  "prompt": "Talk about favorite animals"},
+    {"id": "colors",     "label": "Colors 🎨",   "prompt": "Describe things by their color"},
+    {"id": "family",     "label": "Family 👨‍👩‍👧",  "prompt": "Talk about family members"},
+    {"id": "food",       "label": "Food 🍎",     "prompt": "Talk about foods you like or dislike"},
+    {"id": "numbers",    "label": "Numbers 🔢",  "prompt": "Count and describe quantities"},
+    {"id": "weather",    "label": "Weather ☀️",  "prompt": "Describe today's weather"},
+    {"id": "school",     "label": "School 🏫",   "prompt": "Talk about school activities"},
+    {"id": "free",       "label": "Free Talk 💬", "prompt": "Talk about anything you like"},
+]
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -482,19 +496,14 @@ async def speaking_ws(
 def ping():
     return {"status": "pong", "info": "API is alive"}
 
-@app.post("/api/speaking/chat")
-async def speaking_chat_http(
-    body: dict,
-    db:   Session = Depends(get_db),
-):
-    """
-    Consolidated HTTP-based chat turn for Vercel compatibility.
-    """
+@app.post("/api/chat")
+async def chat_handler(request: Request):
+    """Advanced AI chat endpoint for Alex."""
     try:
-        from groq import Groq
+        body = await request.json()
         api_key = os.getenv("GROQ_API_KEY", "")
         if not api_key:
-            return {"user_transcript": body.get("text"), "ai_text": "Xatolik: GROQ_API_KEY o'rnatilmagan.", "scores": {}}
+            return {"error": "GROQ_API_KEY not set"}
 
         client = Groq(api_key=api_key)
         
@@ -502,12 +511,23 @@ async def speaking_chat_http(
         text     = body.get("text", "").strip()
         history  = body.get("history", [])
 
-        if not text:
-            raise HTTPException(400, "Text is required")
+        topic_obj = next((t for t in SPEAKING_TOPICS if t["id"] == topic_id), SPEAKING_TOPICS[-1])
+        topic_label = topic_obj["label"]
 
-        # Core AI Prompting logic (copied from speaking_service for isolation)
-        system_prompt = f"You are Alex, a friendly English tutor for children. Topic ID: {topic_id}. Reply in JSON format: {{'reply': '...', 'scores': {{'fluency': 8, ...}}}}"
+        system_prompt = f"""
+        You are Alex, a friendly English tutor for children. 
+        Your goal is to have a simple and engaging conversation in English.
+        Current Topic: {topic_label}.
+
+        Rules:
+        1. Keep sentences short and simple (suitable for kids).
+        2. Be encouraging and use emojis.
+        3. If the user doesn't speak English, kindly remind them to try English, but you can say a few words in Uzbek to help (e.g. "Iltimos, inglizcha gapiring!").
+        4. If the topic is "Free Talk 💬", you can talk about anything the user wants.
+        5. ALWAYS respond in JSON format with two keys: "reply" (your text response) and "scores" (an object with fluency, grammar, and vocab scores from 1-10).
+        """
         
+        # We use run_in_executor because Groq's current SDK is synchronous (as used here)
         import asyncio
         loop = asyncio.get_event_loop()
         chat_completion = await loop.run_in_executor(None, lambda: client.chat.completions.create(
@@ -520,9 +540,7 @@ async def speaking_chat_http(
             response_format={"type": "json_object"}
         ))
         
-        import json
         res_data = json.loads(chat_completion.choices[0].message.content)
-        
         return {
             "user_transcript": text,
             "ai_text":         res_data.get("reply", ""),
@@ -530,51 +548,57 @@ async def speaking_chat_http(
         }
     except Exception as e:
         import traceback
-        err_info = f"{str(e)}\n{traceback.format_exc()}"
-        print(err_info)
-        return {"error": "Internal Server Error", "detail": err_info}
+        return {"error": "Internal Server Error", "detail": f"{str(e)}\n{traceback.format_exc()}"}
 
 
-@app.post("/api/speaking/voice")
-async def speaking_voice_http(
+@app.post("/api/voice")
+async def voice_handler(
     file:     UploadFile = File(...),
     user_id:  int        = Query(...),
     topic_id: str        = Query("free"),
-    history:  str        = Query("[]"), # JSON string
-    db:       Session    = Depends(get_db),
+    history:  str        = Query("[]"),
 ):
-    """
-    Consolidated HTTP-based voice turn for Vercel.
-    """
+    """Advanced AI voice endpoint for Alex."""
     temp_path = f"/tmp/voice_{user_id}_{int(time.time())}.webm"
     try:
         with open(temp_path, "wb") as buf:
             shutil.copyfileobj(file.file, buf)
 
-        from groq import Groq
         api_key = os.getenv("GROQ_API_KEY", "")
         if not api_key:
-            return {"error": "GROQ_API_KEY Not Set"}
+            return {"error": "GROQ_API_KEY not set"}
 
         client = Groq(api_key=api_key)
-            
-        # 1. Transcribe
-        with open(temp_path, "rb") as audio_file:
-            transcript = client.audio.transcriptions.create(
-                model="whisper-large-v3",
-                file=audio_file,
-                response_format="text"
-            )
-        user_text = transcript.strip()
-        
-        # 2. Get AI Reply
-        import json
-        hist_list = json.loads(history)
-        
-        system_prompt = f"You are Alex, a friendly English tutor for children. Topic ID: {topic_id}. Reply in JSON format: {{'reply': '...', 'scores': {{'fluency': 8, ...}}}}"
         
         import asyncio
         loop = asyncio.get_event_loop()
+
+        # 1. Transcribe (Sync)
+        transcript = await loop.run_in_executor(None, lambda: client.audio.transcriptions.create(
+            model="whisper-large-v3",
+            file=open(temp_path, "rb"),
+            response_format="text"
+        ))
+        user_text = transcript.strip()
+        
+        hist_list = json.loads(history)
+        topic_obj = next((t for t in SPEAKING_TOPICS if t["id"] == topic_id), SPEAKING_TOPICS[-1])
+        topic_label = topic_obj["label"]
+
+        system_prompt = f"""
+        You are Alex, a friendly English tutor for children. 
+        Your goal is to have a simple and engaging conversation in English.
+        Current Topic: {topic_label}.
+
+        Rules:
+        1. Keep sentences short and simple (suitable for kids).
+        2. Be encouraging and use emojis.
+        3. If the user doesn't speak English, kindly remind them to try English, but you can say a few words in Uzbek to help (e.g. "Iltimos, inglizcha gapiring!").
+        4. If the topic is "Free Talk 💬", you can talk about anything the user wants.
+        5. ALWAYS respond in JSON format with two keys: "reply" (your text response) and "scores" (an object with fluency, grammar, and vocab scores from 1-10).
+        """
+        
+        # 2. Chat (Sync)
         chat_completion = await loop.run_in_executor(None, lambda: client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -584,8 +608,8 @@ async def speaking_voice_http(
             ],
             response_format={"type": "json_object"}
         ))
-        res_data = json.loads(chat_completion.choices[0].message.content)
         
+        res_data = json.loads(chat_completion.choices[0].message.content)
         return {
             "user_transcript": user_text,
             "ai_text":         res_data.get("reply", ""),
@@ -593,8 +617,7 @@ async def speaking_voice_http(
         }
     except Exception as e:
         import traceback
-        err_info = f"{str(e)}\n{traceback.format_exc()}"
-        return {"error": "Internal Server Error", "detail": err_info}
+        return {"error": "Internal Server Error", "detail": f"{str(e)}\n{traceback.format_exc()}"}
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)

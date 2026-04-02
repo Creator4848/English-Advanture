@@ -6,14 +6,6 @@
   },
   "rewrites": [
     {
-      "source": "/api/chat",
-      "destination": "/api/chat.py"
-    },
-    {
-      "source": "/api/voice",
-      "destination": "/api/voice.py"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "/api/index.py"
     }
