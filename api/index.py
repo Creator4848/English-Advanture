@@ -436,6 +436,71 @@ async def speaking_ws(
         await websocket.close()
 
 
+@app.post("/api/speaking/chat")
+async def speaking_chat_http(
+    body: dict,
+    db:   Session = Depends(get_db),
+):
+    # ... (existing code)
+    try:
+        from speaking_service import process_speaking_turn
+        # ...
+        result = await process_speaking_turn(text, topic_id, history)
+        return {
+            "user_transcript": text,
+            "ai_text":         result["reply"],
+            "scores":          result["scores"],
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/speaking/voice")
+async def speaking_voice_http(
+    file:     UploadFile = File(...),
+    user_id:  int        = Query(...),
+    topic_id: str        = Query("free"),
+    history:  str        = Query("[]"), # JSON string
+    db:       Session    = Depends(get_db),
+):
+    """
+    HTTP-based voice turn for Vercel.
+    Transcribes audio -> generates AI response.
+    """
+    temp_path = f"/tmp/voice_{user_id}_{int(time.time())}.webm"
+    with open(temp_path, "wb") as buf:
+        shutil.copyfileobj(file.file, buf)
+    
+    try:
+        from speaking_service import client, process_speaking_turn
+        if not client:
+            raise HTTPException(503, "Groq client not initialized")
+            
+        # 1. Transcribe
+        with open(temp_path, "rb") as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-large-v3",
+                file=audio_file,
+                response_format="text"
+            )
+        user_text = transcript.strip()
+        
+        # 2. Get AI Reply
+        hist_list = json.loads(history)
+        result = await process_speaking_turn(user_text, topic_id, hist_list)
+        
+        return {
+            "user_transcript": user_text,
+            "ai_text":         result["reply"],
+            "scores":          result["scores"],
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # LEGACY – Speech analysis  (kept for backward-compat)
 # ═════════════════════════════════════════════════════════════════════════════

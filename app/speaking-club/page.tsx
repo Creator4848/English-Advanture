@@ -6,6 +6,7 @@ import { Mic, MicOff, Send, X, Star, Activity } from "lucide-react";
 import Link from "next/link";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 const USER_ID = 1;
 
 const TOPICS = [
@@ -120,8 +121,8 @@ export default function SpeakingClubPage() {
                 }
             };
         } catch {
-            // Offline demo mode
-            setWsStatus("Demo rejimi (WebSocket yo'q)");
+            // HTTP mode fallback
+            setWsStatus("HTTP rejimida ✨");
             setMessages([{
                 role: "assistant",
                 content: `Hi! I'm Alex 🌟 Today we're going to talk about ${topic.label}! Are you ready? Let's go! 🚀`,
@@ -136,19 +137,53 @@ export default function SpeakingClubPage() {
         setConnected(false);
     };
 
-    const sendText = () => {
+    const sendText = async () => {
         if (!text.trim()) return;
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ text }));
-        } else {
-            // Demo fallback
-            setMessages((prev) => [
-                ...prev,
-                { role: "user", content: text },
-                { role: "assistant", content: "Great try! 🌟 Keep practicing your English! Can you tell me more?" },
-            ]);
-        }
+
+        const userMsg: Message = { role: "user", content: text };
+        setMessages((prev) => [...prev, userMsg]);
+        const currentText = text;
         setText("");
+
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ text: currentText }));
+        } else {
+            // HTTP fallback for Vercel
+            setWsStatus("HTTP rejimida ✨");
+            try {
+                const res = await fetch(`${API_URL}/speaking/chat`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: USER_ID,
+                        topic_id: topic.id,
+                        text: currentText,
+                        history: messages.slice(-10).map(m => ({
+                            role: m.role === "assistant" ? "assistant" : "user",
+                            content: m.content
+                        }))
+                    })
+                });
+                const data = await res.json();
+                if (data.ai_text) {
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            role: "assistant",
+                            content: data.ai_text,
+                            scores: data.scores,
+                        },
+                    ]);
+                } else {
+                    throw new Error("No response");
+                }
+            } catch (err) {
+                setMessages((prev) => [
+                    ...prev,
+                    { role: "assistant", content: "Kechirasiz, serverda muammo yuz berdi. Iltimos, keyinroq urinib ko'ring." },
+                ]);
+            }
+        }
     };
 
     const toggleRecording = async () => {
@@ -161,10 +196,35 @@ export default function SpeakingClubPage() {
                 const mr = new MediaRecorder(stream, { mimeType: "audio/webm" });
                 chunksRef.current = [];
                 mr.ondataavailable = (e) => chunksRef.current.push(e.data);
-                mr.onstop = () => {
-                    const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+                mr.onstop = async () => {
+                    const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
                     if (wsRef.current?.readyState === WebSocket.OPEN) {
-                        blob.arrayBuffer().then((buf) => wsRef.current!.send(buf));
+                        wsRef.current.send(audioBlob);
+                    } else {
+                        setWsStatus("Ovozli HTTP xabari... 🎙️");
+                        try {
+                            const formData = new FormData();
+                            formData.append("file", audioBlob, "voice.webm");
+                            const historyJson = JSON.stringify(messages.slice(-10).map(m => ({
+                                role: m.role === "assistant" ? "assistant" : "user",
+                                content: m.content
+                            })));
+                            const res = await fetch(`${API_URL}/speaking/voice?user_id=${USER_ID}&topic_id=${topic.id}&history=${encodeURIComponent(historyJson)}`, {
+                                method: "POST",
+                                body: formData
+                            });
+                            const data = await res.json();
+                            if (data.ai_text) {
+                                setMessages((prev) => [
+                                    ...prev,
+                                    { role: "user", content: `🎙️ ${data.user_transcript}`, transcript: data.user_transcript },
+                                    { role: "assistant", content: data.ai_text, scores: data.scores },
+                                ]);
+                                setWsStatus("HTTP rejimida ✨");
+                            }
+                        } catch (err) {
+                            setMessages((prev) => [...prev, { role: "assistant", content: "Ovozli xabarni yuborishda xatolik yuz berdi." }]);
+                        }
                     }
                     stream.getTracks().forEach((t) => t.stop());
                 };
@@ -198,8 +258,8 @@ export default function SpeakingClubPage() {
                                 id={`topic-${t.id}`}
                                 onClick={() => setTopic(t)}
                                 className={`card p-5 text-left transition-all ${topic.id === t.id
-                                        ? "border-[#FFB800] bg-[#FFF3CC] shadow-md"
-                                        : "hover:border-[#FFB800]"
+                                    ? "border-[#FFB800] bg-[#FFF3CC] shadow-md"
+                                    : "hover:border-[#FFB800]"
                                     }`}
                             >
                                 <div className="text-3xl mb-2">{t.label.split(" ")[1] || "💬"}</div>
@@ -259,8 +319,8 @@ export default function SpeakingClubPage() {
                         id="mic-btn"
                         onClick={toggleRecording}
                         className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${recording
-                                ? "bg-red-500 text-white shadow-lg animate-pulse"
-                                : "bg-[#FFB800] text-white shadow"
+                            ? "bg-red-500 text-white shadow-lg animate-pulse"
+                            : "bg-[#FFB800] text-white shadow"
                             }`}
                     >
                         {recording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
