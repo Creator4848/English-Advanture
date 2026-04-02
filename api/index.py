@@ -436,18 +436,26 @@ async def speaking_ws(
         await websocket.close()
 
 
+@app.get("/api/ping")
+def ping():
+    return {"status": "pong", "info": "API is alive"}
+
 @app.post("/api/speaking/chat")
 async def speaking_chat_http(
     body: dict,
     db:   Session = Depends(get_db),
 ):
     """
-    HTTP-based chat turn for Vercel compatibility.
-    Expected body: { user_id, topic_id, text, history? }
+    Consolidated HTTP-based chat turn for Vercel compatibility.
     """
     try:
-        from speaking_service import process_speaking_turn
-        user_id  = body.get("user_id")
+        from groq import Groq
+        api_key = os.getenv("GROQ_API_KEY", "")
+        if not api_key:
+            return {"user_transcript": body.get("text"), "ai_text": "Xatolik: GROQ_API_KEY o'rnatilmagan.", "scores": {}}
+
+        client = Groq(api_key=api_key)
+        
         topic_id = body.get("topic_id", "free")
         text     = body.get("text", "").strip()
         history  = body.get("history", [])
@@ -455,18 +463,34 @@ async def speaking_chat_http(
         if not text:
             raise HTTPException(400, "Text is required")
 
-        result = await process_speaking_turn(text, topic_id, history)
+        # Core AI Prompting logic (copied from speaking_service for isolation)
+        system_prompt = f"You are Alex, a friendly English tutor for children. Topic ID: {topic_id}. Reply in JSON format: {{'reply': '...', 'scores': {{'fluency': 8, ...}}}}"
+        
+        import asyncio
+        loop = asyncio.get_event_loop()
+        chat_completion = await loop.run_in_executor(None, lambda: client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                *history,
+                {"role": "user", "content": text}
+            ],
+            response_format={"type": "json_object"}
+        ))
+        
+        import json
+        res_data = json.loads(chat_completion.choices[0].message.content)
         
         return {
             "user_transcript": text,
-            "ai_text":         result["reply"],
-            "scores":          result["scores"],
+            "ai_text":         res_data.get("reply", ""),
+            "scores":          res_data.get("scores", {"fluency": 7, "grammar": 7, "vocab": 7})
         }
     except Exception as e:
         import traceback
-        err_msg = f"Backend xatosi: {str(e)}\n{traceback.format_exc()}"
-        print(err_msg)
-        raise HTTPException(500, err_msg)
+        err_info = f"{str(e)}\n{traceback.format_exc()}"
+        print(err_info)
+        return {"error": "Internal Server Error", "detail": err_info}
 
 
 @app.post("/api/speaking/voice")
@@ -478,17 +502,19 @@ async def speaking_voice_http(
     db:       Session    = Depends(get_db),
 ):
     """
-    HTTP-based voice turn for Vercel.
-    Transcribes audio -> generates AI response.
+    Consolidated HTTP-based voice turn for Vercel.
     """
     temp_path = f"/tmp/voice_{user_id}_{int(time.time())}.webm"
-    with open(temp_path, "wb") as buf:
-        shutil.copyfileobj(file.file, buf)
-    
     try:
-        from speaking_service import client, process_speaking_turn
-        if not client:
-            raise HTTPException(503, "Groq client not initialized")
+        with open(temp_path, "wb") as buf:
+            shutil.copyfileobj(file.file, buf)
+
+        from groq import Groq
+        api_key = os.getenv("GROQ_API_KEY", "")
+        if not api_key:
+            return {"error": "GROQ_API_KEY Not Set"}
+
+        client = Groq(api_key=api_key)
             
         # 1. Transcribe
         with open(temp_path, "rb") as audio_file:
@@ -500,19 +526,33 @@ async def speaking_voice_http(
         user_text = transcript.strip()
         
         # 2. Get AI Reply
+        import json
         hist_list = json.loads(history)
-        result = await process_speaking_turn(user_text, topic_id, hist_list)
+        
+        system_prompt = f"You are Alex, a friendly English tutor for children. Topic ID: {topic_id}. Reply in JSON format: {{'reply': '...', 'scores': {{'fluency': 8, ...}}}}"
+        
+        import asyncio
+        loop = asyncio.get_event_loop()
+        chat_completion = await loop.run_in_executor(None, lambda: client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                *hist_list,
+                {"role": "user", "content": user_text}
+            ],
+            response_format={"type": "json_object"}
+        ))
+        res_data = json.loads(chat_completion.choices[0].message.content)
         
         return {
             "user_transcript": user_text,
-            "ai_text":         result["reply"],
-            "scores":          result["scores"],
+            "ai_text":         res_data.get("reply", ""),
+            "scores":          res_data.get("scores", {"fluency": 7, "grammar": 7, "vocab": 7})
         }
     except Exception as e:
         import traceback
-        err_msg = f"Backend xatosi: {str(e)}\n{traceback.format_exc()}"
-        print(err_msg)
-        raise HTTPException(500, err_msg)
+        err_info = f"{str(e)}\n{traceback.format_exc()}"
+        return {"error": "Internal Server Error", "detail": err_info}
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
