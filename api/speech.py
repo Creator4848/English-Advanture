@@ -7,7 +7,7 @@ load_dotenv()
 
 class VoiceAnalyzer:
     def __init__(self):
-        self.api_key = os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY")
+        self.api_key = os.getenv("GROQ_API_KEY")
         if not self.api_key:
             print("WARNING: GROQ_API_KEY not found. Using Mock VoiceAnalyzer.")
             self.mock_mode = True

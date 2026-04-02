@@ -88,7 +88,7 @@ async def health_check():
         "status":     "healthy",
         "service":    "English Adventure API v2",
         "database":   db_status,
-        "openai_key": "Set" if os.getenv("OPENAI_API_KEY") else "Not Set",
+        "groq_key":   "Set" if os.getenv("GROQ_API_KEY") else "Not Set",
         "youtube_key":"Set" if os.getenv("YOUTUBE_API_KEY") else "Not Set",
         "env":        os.getenv("VERCEL_ENV", "local"),
     }
