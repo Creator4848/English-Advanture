@@ -6,7 +6,7 @@ import { Mic, MicOff, Send, X, Star, Activity } from "lucide-react";
 import Link from "next/link";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 const USER_ID = 1;
 
 const TOPICS = [

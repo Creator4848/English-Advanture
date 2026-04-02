@@ -441,11 +441,22 @@ async def speaking_chat_http(
     body: dict,
     db:   Session = Depends(get_db),
 ):
-    # ... (existing code)
+    """
+    HTTP-based chat turn for Vercel compatibility.
+    Expected body: { user_id, topic_id, text, history? }
+    """
     try:
         from speaking_service import process_speaking_turn
-        # ...
+        user_id  = body.get("user_id")
+        topic_id = body.get("topic_id", "free")
+        text     = body.get("text", "").strip()
+        history  = body.get("history", [])
+
+        if not text:
+            raise HTTPException(400, "Text is required")
+
         result = await process_speaking_turn(text, topic_id, history)
+        
         return {
             "user_transcript": text,
             "ai_text":         result["reply"],

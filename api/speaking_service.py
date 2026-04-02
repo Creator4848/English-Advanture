@@ -72,7 +72,7 @@ async def process_speaking_turn(user_text: str, topic_id: str, history: list = N
     try:
         loop = asyncio.get_event_loop()
         chat_completion = await loop.run_in_executor(None, lambda: client.chat.completions.create(
-            model="llama-3.3-70b-specdec", # Using specdec for faster performance
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
                 *(history or []),
