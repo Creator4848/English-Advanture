@@ -46,7 +46,7 @@ try:
         RegisterRequest, LoginRequest, TokenResponse,
         VideoOut, VideoCreate, VideoUpdate,
         ProgressUpdateRequest, ProgressOut,
-        QuizOut, QuizSubmitRequest, QuizResultOut,
+        QuizOut, QuizSubmitRequest, QuizResultOut, QuizProgressPayload,
         SpeakingSessionOut, DashboardOut
     )
     
@@ -495,11 +495,6 @@ def quiz_results(quiz_id: int, user_id: int, db: Session = Depends(get_db)):
 # ═════════════════════════════════════════════════════════════════════════════
 # PROGRESS / DASHBOARD
 # ═════════════════════════════════════════════════════════════════════════════
-
-class QuizProgressPayload(BaseModel):
-    user_id: int
-    xp_earned: int
-    coins_earned: int = 0
 
 @app.post("/api/progress/quiz")
 async def add_quiz_progress(body: QuizProgressPayload, db: Session = Depends(get_db)):

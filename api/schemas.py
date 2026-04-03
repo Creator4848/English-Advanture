@@ -115,6 +115,11 @@ class QuizSubmitRequest(BaseModel):
     user_id: int
     answers: dict[str, str]   # {question_id: option_id}
 
+class QuizProgressPayload(BaseModel):
+    user_id: int
+    xp_earned: int
+    coins_earned: int = 0
+
 class QuizResultOut(BaseModel):
     score:       int
     passed:      bool
