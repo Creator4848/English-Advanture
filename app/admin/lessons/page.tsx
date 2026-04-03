@@ -250,7 +250,7 @@ export default function AdminLessonsPage() {
                             <tbody>
                                 {filteredLessons.map((lesson, idx) => (
                                     <tr key={lesson.id} className="group cursor-pointer">
-                                        <td className="text-gray-500 font-bold">{idx + 1}</td>
+                                        <td className="text-gray-500 font-bold">{lesson.order_index || idx + 1}</td>
                                         <td>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-16 h-10 rounded-lg bg-[#21253A] flex items-center justify-center relative overflow-hidden flex-shrink-0">

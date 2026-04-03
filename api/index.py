@@ -323,7 +323,14 @@ async def sync_videos(
 @app.post("/api/videos", response_model=VideoOut)
 def create_video(body: VideoCreate, db: Session = Depends(get_db)):
     try:
-        video = Video(**body.dict())
+        data = body.dict()
+        
+        # Auto-increment order_index if not provided or 0
+        if not data.get("order_index"):
+            max_video = db.query(Video).order_by(Video.order_index.desc()).first()
+            data["order_index"] = (max_video.order_index or 0) + 1 if max_video else 1
+            
+        video = Video(**data)
         db.add(video)
         db.commit()
         db.refresh(video)
