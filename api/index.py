@@ -238,7 +238,9 @@ async def test_db(db: Session = Depends(get_db)):
 @app.post("/api/auth/register", response_model=TokenResponse)
 def register(body: RegisterRequest, db: Session = Depends(get_db)):
     if db.query(User).filter(User.username == body.username).first():
-        raise HTTPException(400, "Username already taken")
+        raise HTTPException(400, "Ushbu telefon raqam allaqachon ro'yxatdan o'tgan")
+    if len(body.password) > 60:
+        raise HTTPException(400, "Parol juda uzun (maksimal 60 ta belgi)")
     user = User(
         username        = body.username,
         full_name       = body.full_name,
