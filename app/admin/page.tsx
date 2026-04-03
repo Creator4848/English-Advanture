@@ -36,21 +36,22 @@ export default function AdminDashboardPage() {
         { icon: TrendingUp, label: "Platformaga kirishlar", val: "8.4k", sub: "+12% o'sish", c: "text-purple-400", bg: "bg-purple-400/10" },
     ];
 
+    const handleGenerateReport = () => {
+        window.print();
+    };
+
     return (
-        <div className="p-6 lg:p-10 max-w-[1400px] mx-auto pb-24">
+        <div className="p-6 lg:p-10 max-w-[1400px] mx-auto pb-24 print:p-0">
 
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 print:hidden">
                 <div>
                     <h1 className="text-3xl font-black text-white mb-2">Boshqaruv Paneli</h1>
                     <p className="text-gray-400 font-medium">Platforma faoliyati va o'quvchilar statistikasi</p>
                 </div>
                 <div className="flex gap-3">
-                    <button className="adm-btn-ghost">
+                    <button className="adm-btn-ghost" onClick={handleGenerateReport}>
                         Hisobot (PDF) <ArrowUpRight className="w-4 h-4 text-[#FFC107]" />
-                    </button>
-                    <button className="adm-btn-yellow">
-                        Yangi dars yuklash <Video className="w-4 h-4" />
                     </button>
                 </div>
             </div>

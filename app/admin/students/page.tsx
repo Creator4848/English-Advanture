@@ -38,6 +38,30 @@ export default function AdminStudentsPage() {
         { key: "inactive", label: `Nofaol (${students.filter(s => s.status === "inactive").length})` },
     ];
 
+    const handleExportCSV = () => {
+        const headers = ["Ismi", "Email", "XP", "Level", "Progress", "Holat", "So'nggi kirish"];
+        const rows = filtered.map(s => [
+            s.full_name || s.username,
+            s.email || "",
+            s.xp,
+            s.level,
+            `${s.progress}%`,
+            s.status,
+            s.last_login
+        ]);
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `students_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     if (loading) return <div className="p-10 text-white font-bold text-center">Yuklanmoqda...</div>;
 
     return (
@@ -50,11 +74,8 @@ export default function AdminStudentsPage() {
                     <p className="text-gray-400 font-medium">Ro'yxatdan o'tgan o'quvchilar, ularning email va progress ma'lumotlari</p>
                 </div>
                 <div className="flex gap-3">
-                    <button className="adm-btn-ghost">
+                    <button className="adm-btn-ghost" onClick={handleExportCSV}>
                         Eksport (CSV) <Download className="w-4 h-4" />
-                    </button>
-                    <button className="adm-btn-yellow">
-                        O'quvchi qo'shish <Users className="w-4 h-4" />
                     </button>
                 </div>
             </div>
