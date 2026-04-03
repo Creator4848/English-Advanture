@@ -188,12 +188,14 @@ export default function AdminLessonsPage() {
                     <span className="px-4 py-2 rounded-lg text-sm font-bold bg-[#FFC107]/10 text-[#FFC107]">
                         Jami: {lessons.length} ta dars
                     </span>
-                    <div className="relative w-full md:w-64">
-                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <div className="relative w-full md:w-64 max-w-sm mx-auto md:mx-0 group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-4 w-4 text-[#FFC107] opacity-60 group-focus-within:opacity-100 transition-opacity" />
+                        </div>
                         <input
                             type="text"
                             placeholder="Dars qidirish..."
-                            className="adm-input pl-9"
+                            className="block w-full bg-[#1A1D2E] border border-[#ffffff10] rounded-xl py-2 pl-10 pr-3 text-sm text-center text-white placeholder:text-gray-500 focus:outline-none focus:border-[#FFC107] focus:ring-1 focus:ring-[#FFC107] transition-all"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
