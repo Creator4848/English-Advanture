@@ -4,11 +4,11 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, Send, X, Star, Activity } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
-const USER_ID = 1;
 
 const TOPICS = [
     { id: "animals", label: "Animals 🐾", desc: "Talk about your favorite animals" },
@@ -72,6 +72,20 @@ function Bubble({ msg }: { msg: Message }) {
 
 /* ── Main Page ───────────────────────────────────────────────── */
 export default function SpeakingClubPage() {
+    const router = useRouter();
+    const [userId, setUserId] = useState<number>(1);
+
+    // Auth Check
+    useEffect(() => {
+        const token = localStorage.getItem("user_token");
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+        const userInfoRaw = localStorage.getItem("user_info");
+        const userInfo = userInfoRaw ? JSON.parse(userInfoRaw) : {};
+        setUserId(userInfo.user?.id || userInfo.user_id || userInfo.id || 1);
+    }, [router]);
     const [phase, setPhase] = useState<"select" | "chat">("select");
     const [topic, setTopic] = useState(TOPICS[0]);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -92,7 +106,7 @@ export default function SpeakingClubPage() {
         setPhase("chat");
         setMessages([]);
 
-        const url = `${WS_URL}/ws/speaking?user_id=${USER_ID}&topic_id=${topic.id}`;
+        const url = `${WS_URL}/ws/speaking?user_id=${userId}&topic_id=${topic.id}`;
         try {
             const ws = new WebSocket(url);
             wsRef.current = ws;
@@ -156,7 +170,7 @@ export default function SpeakingClubPage() {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        user_id: USER_ID,
+                        user_id: userId,
                         topic_id: topic.id,
                         text: currentText,
                         history: messages.slice(-10).map(m => ({
@@ -210,7 +224,7 @@ export default function SpeakingClubPage() {
                                 role: m.role === "assistant" ? "assistant" : "user",
                                 content: m.content
                             })));
-                            const res = await fetch(`${API_URL}/voice?user_id=${USER_ID}&topic_id=${topic.id}&history=${encodeURIComponent(historyJson)}`, {
+                            const res = await fetch(`${API_URL}/voice?user_id=${userId}&topic_id=${topic.id}&history=${encodeURIComponent(historyJson)}`, {
                                 method: "POST",
                                 body: formData
                             });

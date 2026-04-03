@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { BookOpen, Search, ChevronRight, Clock, Star, Play } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -57,12 +57,21 @@ interface Video {
 /* ── Inner component (uses useSearchParams — must be in Suspense) ── */
 function LessonsInner() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const defaultTopic = searchParams.get("topic") || "All";
 
     const [videos, setVideos] = useState<Video[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState("");
     const [topic, setTopic] = useState(defaultTopic);
+
+    // Auth check
+    useEffect(() => {
+        const token = localStorage.getItem("user_token");
+        if (!token) {
+            router.push("/login");
+        }
+    }, [router]);
 
     useEffect(() => {
         const fetchVideos = async () => {

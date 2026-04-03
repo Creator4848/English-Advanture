@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { BookOpen, CheckCircle, Mic, Star, Trophy, Zap, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
-const USER_ID = 1;
 
 const MOCK_DASHBOARD = {
     user_id: 1,
@@ -35,13 +35,25 @@ const RECENT_ACTIVITIES = [
 ];
 
 export default function DashboardPage() {
+    const router = useRouter();
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const token = localStorage.getItem("user_token");
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+
+        const userInfoRaw = localStorage.getItem("user_info");
+        const userInfo = userInfoRaw ? JSON.parse(userInfoRaw) : {};
+        // The user object could be nested or flat depending on how api/index.py returns it
+        const uId = userInfo.user?.id || userInfo.user_id || userInfo.id || 1;
+
         (async () => {
             try {
-                const res = await fetch(`${API}/progress/${USER_ID}`);
+                const res = await fetch(`${API}/progress/${uId}`);
                 if (res.ok) setData(await res.json());
                 else setData(MOCK_DASHBOARD);
             } catch {
@@ -50,7 +62,7 @@ export default function DashboardPage() {
                 setLoading(false);
             }
         })();
-    }, []);
+    }, [router]);
 
     if (loading) {
         return (
