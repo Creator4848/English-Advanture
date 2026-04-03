@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-    LayoutDashboard, BookOpen, GamepadIcon, Users, Bot,
-    Trophy, Settings, LogOut, ChevronRight, Zap
+    LayoutDashboard, BookOpen, Users, Bot, Settings, LogOut, Zap
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -17,46 +16,16 @@ const NAV_ITEMS = [
         label: "Darslar boshqaruvi",
         href: "/admin/lessons",
         icon: BookOpen,
-        children: [
-            { label: "Video darslar", href: "/admin/lessons" },
-            { label: "Mavzu qo'shish", href: "/admin/lessons/new" },
-        ],
-    },
-    {
-        label: "Testlar va O'yinlar",
-        href: "/admin/tests",
-        icon: GamepadIcon,
-        children: [
-            { label: "Savollar banki", href: "/admin/tests" },
-            { label: "O'yin tahrirlovchisi", href: "/admin/tests/editor" },
-        ],
     },
     {
         label: "O'quvchilar",
         href: "/admin/students",
         icon: Users,
-        children: [
-            { label: "Guruhlar", href: "/admin/students" },
-            { label: "Progress kuzatish", href: "/admin/students/progress" },
-        ],
     },
     {
-        label: "AI Suhbatdoshi",
+        label: "AI Suhbatdosh",
         href: "/admin/ai",
         icon: Bot,
-        children: [
-            { label: "AI bot sozlamalari", href: "/admin/ai" },
-            { label: "Suhbatlar tarixi", href: "/admin/ai/history" },
-        ],
-    },
-    {
-        label: "Yutuqlar va Reyting",
-        href: "/admin/achievements",
-        icon: Trophy,
-        children: [
-            { label: "Nishonlar (Badges)", href: "/admin/achievements" },
-            { label: "Leaderboard", href: "/admin/achievements/leaderboard" },
-        ],
     },
     {
         label: "Sozlamalar",
@@ -95,7 +64,7 @@ export default function Sidebar() {
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 overflow-y-auto px-3">
+            <nav className="flex-1 overflow-y-auto px-3 space-y-1">
                 {NAV_ITEMS.map((item) => {
                     const isActive =
                         item.href === "/admin"
@@ -104,40 +73,16 @@ export default function Sidebar() {
                     const Icon = item.icon;
 
                     return (
-                        <div key={item.href} className="mb-1">
-                            <Link
-                                href={item.href}
-                                className={`admin-nav-item ${isActive ? "active" : ""}`}
-                            >
-                                <Icon
-                                    className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-[#111111]" : "text-[#FFC107]"}`}
-                                />
-                                <span className="flex-1 text-sm font-bold">{item.label}</span>
-                                {item.children && (
-                                    <ChevronRight
-                                        className={`w-3.5 h-3.5 transition-transform ${isActive ? "rotate-90 text-[#111111]" : "text-gray-600"}`}
-                                    />
-                                )}
-                            </Link>
-
-                            {/* Sub-items */}
-                            {item.children && isActive && (
-                                <div className="mt-1 ml-4 pl-3 border-l border-[#FFC107]/30 space-y-0.5">
-                                    {item.children.map((child) => (
-                                        <Link
-                                            key={child.href}
-                                            href={child.href}
-                                            className={`block px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${pathname === child.href
-                                                    ? "text-[#FFC107] bg-[#FFC107]/10"
-                                                    : "text-gray-400 hover:text-white hover:bg-white/5"
-                                                }`}
-                                        >
-                                            {child.label}
-                                        </Link>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`admin-nav-item ${isActive ? "active" : ""}`}
+                        >
+                            <Icon
+                                className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-[#111111]" : "text-[#FFC107]"}`}
+                            />
+                            <span className="flex-1 text-sm font-bold">{item.label}</span>
+                        </Link>
                     );
                 })}
             </nav>

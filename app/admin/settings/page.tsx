@@ -31,8 +31,8 @@ export default function AdminSettingsPage() {
                         <button
                             key={item.id}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${item.active
-                                    ? "bg-[#FFC107] text-[#111111] shadow-lg shadow-[#FFC107]/20"
-                                    : "text-gray-400 hover:bg-[#ffffff0a] hover:text-white"
+                                ? "bg-[#FFC107] text-[#111111] shadow-lg shadow-[#FFC107]/20"
+                                : "text-gray-400 hover:bg-[#ffffff0a] hover:text-white"
                                 }`}
                         >
                             <item.icon className="w-4 h-4" /> {item.label}
@@ -96,6 +96,48 @@ export default function AdminSettingsPage() {
                                 <button className="px-6 py-2 rounded-lg bg-[#ffffff0a] text-sm font-bold text-white hover:bg-[#ffffff15] transition-colors">
                                     Parolni yangilash
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* System Settings */}
+                    <div className="adm-card p-6 md:p-8">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-6">
+                            <Database className="w-5 h-5 text-[#FFC107]" /> Tizim Sozlamalari
+                        </h3>
+
+                        <div className="space-y-5">
+                            <div className="grid sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-400 mb-2">Platforma nomi</label>
+                                    <input type="text" defaultValue="English Adventure" className="adm-input" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-400 mb-2">Asosiy til</label>
+                                    <select className="adm-input">
+                                        <option value="uz">🇺🇿 O'zbek tili</option>
+                                        <option value="ru">🇷🇺 Rus tili</option>
+                                        <option value="en">🇬🇧 Ingliz tili</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="pt-2 border-t border-[#ffffff0a] space-y-4">
+                                <p className="text-sm font-black text-gray-400 uppercase tracking-wider">Bildirishnomalar</p>
+                                {[
+                                    { label: "Yangi o'quvchi qo'shilganda xabardor qil", defaultChecked: true },
+                                    { label: "Server xatolarida ogohlantirish", defaultChecked: true },
+                                    { label: "Haftalik statistika hisobotini yuborish", defaultChecked: false },
+                                ].map((item, i) => (
+                                    <label key={i} className="flex items-center justify-between cursor-pointer group">
+                                        <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">{item.label}</span>
+                                        <div className="relative">
+                                            <input type="checkbox" defaultChecked={item.defaultChecked} className="sr-only peer" />
+                                            <div className="w-10 h-5 bg-[#21253A] peer-checked:bg-[#FFC107] rounded-full transition-colors border border-[#ffffff10]" />
+                                            <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow" />
+                                        </div>
+                                    </label>
+                                ))}
                             </div>
                         </div>
                     </div>
