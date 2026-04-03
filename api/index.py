@@ -136,8 +136,23 @@ async def startup_event():
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         print("✅ DB connection success")
+        
+        # ── Migrations ──
+        print("DEBUG: Running auto-migrations...")
+        with engine.connect() as conn:
+            # 1. Add last_login to users if missing
+            try:
+                # Use a dialect-neutral way or check for column existence
+                # For PostgreSQL/SQLite compatibility:
+                conn.execute(text("ALTER TABLE users ADD COLUMN last_login TIMESTAMP"))
+                conn.commit()
+                print("✅ Migration: Added 'last_login' to users")
+            except Exception:
+                # Likely already exists
+                pass
+        
         models.Base.metadata.create_all(bind=engine)
-        print("✅ Database tables created")
+        print("✅ Database tables created/verified")
     except Exception as e:
         print(f"⚠️  DB startup error: {e}")
         traceback.print_exc()

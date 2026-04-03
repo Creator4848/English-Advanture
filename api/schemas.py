@@ -155,7 +155,11 @@ class DashboardOut(BaseModel):
     avatar_url:       Optional[str]
     level:            int
     xp:               int
-    level:            int
+    coins:            int
+    videos_completed: int
+    quizzes_passed:   int
+    speaking_minutes: int
+    badges:           list[dict]
 
 class UserOut(BaseModel):
     id:               int
@@ -175,11 +179,6 @@ class UserOut(BaseModel):
 class UserAdminOut(UserOut):
     progress:         Optional[int] = 0
     status:           Optional[str] = "active"
-    coins:            int
-    videos_completed: int
-    quizzes_passed:   int
-    speaking_minutes: int
-    badges:           list[dict]
 
 # ── Admin Dashboard ───────────────────────────────────────────────────────────
 
