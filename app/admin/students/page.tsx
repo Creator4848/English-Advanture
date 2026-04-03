@@ -1,36 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Download, Users, Filter } from "lucide-react";
 
-const STUDENTS = [
-    { id: "S001", name: "Ali Valiyev", email: "ali.valiyev@gmail.com", progress: 86, level: 12, status: "active", lastLogin: "Bugun, 14:30" },
-    { id: "S002", name: "Zarina Alimova", email: "zarina@example.com", progress: 74, level: 11, status: "active", lastLogin: "Kecha, 18:45" },
-    { id: "S003", name: "Jasur Qodirov", email: "jasur.q@mail.ru", progress: 61, level: 9, status: "active", lastLogin: "2 kun oldin" },
-    { id: "S004", name: "Madina To'rayeva", email: "madina.t@gmail.com", progress: 45, level: 9, status: "inactive", lastLogin: "10 kun oldin" },
-    { id: "S005", name: "Timur Karimov", email: "timur.karimov@email.com", progress: 12, level: 2, status: "new", lastLogin: "Hozir onlayn" },
-    { id: "S006", name: "Dilnoza Yusupova", email: "dilnoza.y@gmail.com", progress: 93, level: 14, status: "active", lastLogin: "30 daqiqa oldin" },
-    { id: "S007", name: "Bobur Rashidov", email: "bobur.r@yahoo.com", progress: 38, level: 6, status: "inactive", lastLogin: "Hafta oldin" },
-];
-
 export default function AdminStudentsPage() {
+    const [students, setStudents] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("all");
     const [searchTerm, setSearchTerm] = useState("");
 
-    const filtered = STUDENTS.filter((s) => {
+    useEffect(() => {
+        fetch("/api/users")
+            .then(res => res.json())
+            .then(data => {
+                setStudents(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Users fetch error:", err);
+                setLoading(false);
+            });
+    }, []);
+
+    const filtered = students.filter((s) => {
         const matchTab = activeTab === "all" ? true
-            : activeTab === "active" ? (s.status === "active" || s.status === "new")
+            : activeTab === "active" ? s.status === "active"
                 : s.status === activeTab;
-        const matchSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            s.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchSearch = (s.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (s.email || "").toLowerCase().includes(searchTerm.toLowerCase());
         return matchTab && matchSearch;
     });
 
     const tabs = [
-        { key: "all", label: `Barchasi (${STUDENTS.length})` },
-        { key: "active", label: `Faol (${STUDENTS.filter(s => s.status === "active" || s.status === "new").length})` },
-        { key: "inactive", label: `Nofaol (${STUDENTS.filter(s => s.status === "inactive").length})` },
+        { key: "all", label: `Barchasi (${students.length})` },
+        { key: "active", label: `Faol (${students.filter(s => s.status === "active").length})` },
+        { key: "inactive", label: `Nofaol (${students.filter(s => s.status === "inactive").length})` },
     ];
+
+    if (loading) return <div className="p-10 text-white font-bold text-center">Yuklanmoqda...</div>;
 
     return (
         <div className="p-6 lg:p-10 max-w-[1400px] mx-auto pb-24">
@@ -106,19 +114,19 @@ export default function AdminStudentsPage() {
                                     <td>
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-full bg-[#FFC107]/15 text-[#FFC107] font-black text-sm flex items-center justify-center relative flex-shrink-0">
-                                                {student.name.charAt(0)}
-                                                {student.lastLogin === "Hozir onlayn" && (
+                                                {student.full_name?.charAt(0) || student.username.charAt(0)}
+                                                {student.last_login === "Bugun" && (
                                                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#1A1D2E] rounded-full" />
                                                 )}
                                             </div>
                                             <div>
-                                                <div className="font-bold text-white group-hover:text-[#FFC107] transition-colors text-sm">{student.name}</div>
+                                                <div className="font-bold text-white group-hover:text-[#FFC107] transition-colors text-sm">{student.full_name || student.username}</div>
                                                 <div className="text-[10px] text-gray-500 font-medium">Level {student.level}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span className="text-gray-300 font-medium text-sm">{student.email}</span>
+                                        <span className="text-gray-300 font-medium text-sm">{student.email || student.username}</span>
                                     </td>
                                     <td>
                                         <div className="flex items-center gap-3 min-w-[130px]">
@@ -136,11 +144,10 @@ export default function AdminStudentsPage() {
                                     <td>
                                         {student.status === "active" && <span className="adm-badge adm-badge-green">Faol</span>}
                                         {student.status === "inactive" && <span className="adm-badge adm-badge-red">Nofaol</span>}
-                                        {student.status === "new" && <span className="adm-badge adm-badge-blue">Yangi</span>}
                                     </td>
                                     <td>
-                                        <span className={`text-sm font-medium ${student.lastLogin === "Hozir onlayn" ? "text-green-400" : "text-gray-400"}`}>
-                                            {student.lastLogin}
+                                        <span className={`text-sm font-medium ${student.last_login === "Bugun" ? "text-green-400" : "text-gray-400"}`}>
+                                            {student.last_login}
                                         </span>
                                     </td>
                                     <td className="text-right">

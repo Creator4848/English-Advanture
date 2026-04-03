@@ -155,11 +155,52 @@ class DashboardOut(BaseModel):
     avatar_url:       Optional[str]
     level:            int
     xp:               int
+    level:            int
+
+class UserOut(BaseModel):
+    id:               int
+    username:         str
+    full_name:        Optional[str]
+    email:            Optional[str]
+    avatar_url:       Optional[str]
+    xp:               int
+    coins:            int
+    level:            int
+    last_login:       Optional[Any]
+    created_at:       Any
+
+    class Config:
+        from_attributes = True
+
+class UserAdminOut(UserOut):
+    progress:         Optional[int] = 0
+    status:           Optional[str] = "active"
     coins:            int
     videos_completed: int
     quizzes_passed:   int
     speaking_minutes: int
     badges:           list[dict]
+
+# ── Admin Dashboard ───────────────────────────────────────────────────────────
+
+class AdminDashboardOut(BaseModel):
+    total_users:      int
+    on_active_today:  int
+    avg_progress:     float
+    total_registrations_last_month: int
+    weekly_activity:  list[int]
+    top_users:        list[dict]
+    popular_lessons:  list[dict]
+    recent_activities: list[dict]
+
+# ── System Settings ───────────────────────────────────────────────────────────
+
+class SystemSettingBase(BaseModel):
+    key:   str
+    value: Any
+
+class SystemSettingOut(SystemSettingBase):
+    pass
 
 # ── Teachers ──────────────────────────────────────────────────────────────────
 

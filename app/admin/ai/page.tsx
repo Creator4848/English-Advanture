@@ -1,10 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bot, Save, Mic, MessageSquare, Volume2, Settings2, Sliders } from "lucide-react";
 
 export default function AdminAIPage() {
-    const [prompt, setPrompt] = useState("Sen Alex ismli quvnoq, samimiy va bolalarni yaxshi ko'radigan ingliz tili o'qituvchisisan. Sen 7-10 yoshli O'zbekistonlik bolalar bilan gaplashyapsan. Faqat juda oddiy, A1 darajadagi inglizcha so'zlar va qisqa gaplardan foydalan. Ba'zan tushuntirish uchun o'zbek tilidan ham foydalanish mumkin, lekin asosan inglizcha savollar berib ularni gapirtir. Hech qachon murakkab grammatika yoki uzun matnlar ishlatma. Har doim ularni maqtashni va ruhlantirishni unutma!");
+    const [config, setConfig] = useState<any>({
+        prompt: "",
+        model: "Groq - LLaMA-3 70B (Tezkor)",
+        temperature: 0.7
+    });
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        fetch("/api/admin/settings/ai_config")
+            .then(res => res.json())
+            .then(data => {
+                if (data.value) setConfig(data.value);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("AI Config fetch error:", err);
+                setLoading(false);
+            });
+    }, []);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const res = await fetch("/api/admin/settings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ key: "ai_config", value: config }),
+            });
+            if (res.ok) alert("Sozlamalar saqlandi!");
+            else alert("Xatolik yuz berdi.");
+        } catch (err) {
+            alert("Xatolik: " + err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) return <div className="p-10 text-white font-bold text-center">Yuklanmoqda...</div>;
 
     return (
         <div className="p-6 lg:p-10 max-w-[1400px] mx-auto pb-24">
@@ -15,8 +53,12 @@ export default function AdminAIPage() {
                     <h1 className="text-3xl font-black text-white mb-2">AI Suhbatdoshi</h1>
                     <p className="text-gray-400 font-medium">Alex botining sozlamalari va promptni boshqarish</p>
                 </div>
-                <button className="adm-btn-yellow">
-                    Saqlash <Save className="w-4 h-4 text-[#111111]" />
+                <button
+                    className="adm-btn-yellow disabled:opacity-50"
+                    onClick={handleSave}
+                    disabled={saving}
+                >
+                    {saving ? "Saqlanmoqda..." : "Saqlash"} <Save className="w-4 h-4 text-[#111111]" />
                 </button>
             </div>
 
@@ -35,8 +77,8 @@ export default function AdminAIPage() {
                                 <label className="block text-sm font-bold text-gray-400 mb-2">Asosiy Prompt</label>
                                 <textarea
                                     className="adm-input min-h-[160px] resize-none leading-relaxed text-sm"
-                                    value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
+                                    value={config.prompt}
+                                    onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
                                 />
                                 <p className="text-xs text-gray-500 font-medium mt-2">Bu promptingiz Groq (Llama-3/GPT-4o-mini) modeliga yuboriladi va botning butun fe'l-atvorini belgilaydi.</p>
                             </div>
@@ -44,7 +86,11 @@ export default function AdminAIPage() {
                             <div className="grid sm:grid-cols-2 gap-4 pt-4 border-t border-[#ffffff0a]">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-400 mb-2">LLM Model</label>
-                                    <select className="adm-input bg-[#151826]">
+                                    <select
+                                        className="adm-input bg-[#151826]"
+                                        value={config.model}
+                                        onChange={(e) => setConfig({ ...config, model: e.target.value })}
+                                    >
                                         <option>Groq - LLaMA-3 70B (Tezkor)</option>
                                         <option>Groq - Mixtral 8x7B</option>
                                         <option>OpenAI - GPT-4o-mini</option>
@@ -53,8 +99,13 @@ export default function AdminAIPage() {
                                 <div>
                                     <label className="block text-sm font-bold text-gray-400 mb-2">Harorat (Temperature)</label>
                                     <div className="flex items-center gap-4 h-10">
-                                        <input type="range" min="0" max="1" step="0.1" defaultValue="0.7" className="flex-1 accent-[#FFC107]" />
-                                        <span className="text-white font-bold bg-[#151826] px-3 py-1 rounded-md border border-[#ffffff10]">0.7</span>
+                                        <input
+                                            type="range" min="0" max="1" step="0.1"
+                                            value={config.temperature}
+                                            onChange={(e) => setConfig({ ...config, temperature: parseFloat(e.target.value) })}
+                                            className="flex-1 accent-[#FFC107]"
+                                        />
+                                        <span className="text-white font-bold bg-[#151826] px-3 py-1 rounded-md border border-[#ffffff10]">{config.temperature}</span>
                                     </div>
                                 </div>
                             </div>

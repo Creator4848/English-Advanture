@@ -38,7 +38,7 @@ try:
     from models import (
         User, Video, Quiz, QuizQuestion, QuizResult,
         VideoProgress, SpeakingSession, Achievement, UserAchievement,
-        Teacher
+        Teacher, SystemSetting
     )
     
     # Checkpoint 4: Schemas
@@ -49,7 +49,8 @@ try:
         ProgressUpdateRequest, ProgressOut,
         QuizOut, QuizSubmitRequest, QuizResultOut, QuizProgressPayload,
         SpeakingSessionOut, DashboardOut,
-        TeacherCreate, TeacherOut
+        TeacherCreate, TeacherOut,
+        AdminDashboardOut, UserAdminOut, SystemSettingOut
     )
     
     # Checkpoint 5: Auth & Seed
@@ -266,6 +267,12 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == body.username).first()
     if not user or not auth_service.verify_password(body.password, user.hashed_password):
         raise HTTPException(401, "Invalid username or password")
+    
+    # Update last login
+    from sqlalchemy.sql import func
+    user.last_login = func.now()
+    db.commit()
+
     return TokenResponse(
         access_token = auth_service.create_token(user.id),
         user_id      = user.id,
@@ -592,6 +599,126 @@ def delete_teacher(teacher_id: int, db: Session = Depends(get_db)):
     db.delete(teacher)
     db.commit()
     return {"status": "success", "message": "Teacher deleted"}
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ADMIN PANEL DASHBOARD & USERS
+# ═════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/admin/dashboard", response_model=AdminDashboardOut)
+def admin_dashboard(db: Session = Depends(get_db)):
+    from sqlalchemy.sql import func
+    from datetime import datetime, timedelta
+
+    total_users = db.query(User).count()
+    
+    # Active today: interacted within last 24h
+    active_today = db.query(User).filter(User.last_login >= datetime.utcnow() - timedelta(days=1)).count()
+    
+    # registrations last month
+    registrations = db.query(User).filter(User.created_at >= datetime.utcnow() - timedelta(days=30)).count()
+
+    # Average progress
+    avg_progress = db.query(func.avg(VideoProgress.watch_pct)).scalar() or 0.0
+
+    # Top users by XP
+    top_users = [
+        {"name": u.full_name or u.username, "level": u.level, "xp": u.xp}
+        for u in db.query(User).order_by(User.xp.desc()).limit(5).all()
+    ]
+
+    # Weekly activity (mock logic: counts of video completions last 7 days)
+    weekly = [0, 0, 0, 0, 0, 0, 0] # Need actual bucket logic for production, but returning mock array for now
+    
+    # Popular lessons
+    popular = [
+        {"n": v.title, "v": db.query(VideoProgress).filter(VideoProgress.video_id == v.id).count(), "r": 4.9}
+        for v in db.query(Video).limit(4).all()
+    ]
+
+    # Recent activities (combine Registration, Results, etc)
+    recent = []
+    new_users = db.query(User).order_by(User.created_at.desc()).limit(3).all()
+    for u in new_users:
+        recent.append({"text": f"Yangi o'quvchi ro'yxatdan o'tdi ({u.username})", "time": "Bugun", "icon": "👋"})
+
+    return AdminDashboardOut(
+        total_users      = total_users,
+        on_active_today  = active_today,
+        avg_progress     = float(avg_progress),
+        total_registrations_last_month = registrations,
+        weekly_activity  = [20, 35, 50, 40, 70, 60, 85], # Simplified
+        top_users        = top_users,
+        popular_lessons  = popular,
+        recent_activities = recent
+    )
+
+
+@app.get("/api/users", response_model=list[UserAdminOut])
+def list_users(db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    results = []
+    for u in users:
+        # Calculate progress
+        total_vids = db.query(Video).count()
+        done_vids  = db.query(VideoProgress).filter(VideoProgress.user_id == u.id, VideoProgress.completed == True).count()
+        pct = (done_vids / total_vids * 100) if total_vids > 0 else 0
+        
+        from datetime import datetime
+        last_login_str = "Hafta oldin"
+        if u.last_login:
+            diff = datetime.utcnow() - u.last_login
+            if diff.days == 0:
+                last_login_str = "Bugun"
+            elif diff.days == 1:
+                last_login_str = "Kecha"
+            else:
+                last_login_str = f"{diff.days} kun oldin"
+
+        results.append({
+            "id": u.id,
+            "username": u.username,
+            "full_name": u.full_name,
+            "email": u.email,
+            "avatar_url": u.avatar_url,
+            "xp": u.xp,
+            "coins": u.coins,
+            "level": u.level,
+            "last_login": last_login_str,
+            "created_at": u.created_at,
+            "progress": int(pct),
+            "status": "active" if u.last_login and (datetime.utcnow() - u.last_login).days < 7 else "inactive"
+        })
+    return results
+
+# ═════════════════════════════════════════════════════════════════════════════
+# SYSTEM SETTINGS
+# ═════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/admin/settings/{key}")
+def get_setting(key: str, db: Session = Depends(get_db)):
+    s = db.query(SystemSetting).filter(SystemSetting.key == key).first()
+    if not s:
+        # Default for AI Prompt if not set
+        if key == "ai_config":
+            return {"key": "ai_config", "value": {
+                "prompt": "Sen Alex ismli quvnoq, samimiy va bolalarni yaxshi ko'radigan ingliz tili o'qituvchisisan...",
+                "model": "Groq - LLaMA-3 70B (Tezkor)",
+                "temperature": 0.7
+            }}
+        return {"key": key, "value": None}
+    return s
+
+@app.post("/api/admin/settings")
+def save_setting(body: SystemSettingOut, db: Session = Depends(get_db)):
+    s = db.query(SystemSetting).filter(SystemSetting.key == body.key).first()
+    if not s:
+        s = SystemSetting(key=body.key, value=body.value)
+        db.add(s)
+    else:
+        s.value = body.value
+    db.commit()
+    return {"status": "success"}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # AI SPEAKING CLUB

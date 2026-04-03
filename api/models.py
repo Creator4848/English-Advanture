@@ -27,6 +27,7 @@ class User(Base):
     # Legacy field kept for compatibility
     gravity_coins   = Column(Integer, default=0)
     preferences     = Column(JSON, default={})
+    last_login      = Column(DateTime, server_default=func.now(), onupdate=func.now())
     created_at      = Column(DateTime, server_default=func.now())
 
     # Relationships
@@ -209,6 +210,16 @@ class Mission(Base):
     content         = Column(JSON)
     difficulty_rank = Column(Integer)
     category        = Column(String)
+
+# ─────────────────────────────────────────────
+# 11. SYSTEM SETTINGS
+# ─────────────────────────────────────────────
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+
+    key   = Column(String(100), primary_key=True)
+    value = Column(JSON, nullable=False)
+
 
 # ─────────────────────────────────────────────
 # 10. TEACHERS
