@@ -263,9 +263,6 @@ export default function Home() {
             <p className="text-xs text-gray-400 font-medium">
               © 2026 English Adventure. Bolalar uchun yaratilgan.
             </p>
-            <Link href="/admin" className="text-xs text-gray-400 font-bold hover:text-[#FFB800] transition-colors flex items-center gap-1">
-              Admin Panel
-            </Link>
           </div>
         </div>
       </footer>
