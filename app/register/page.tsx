@@ -166,6 +166,15 @@ export default function RegisterPage() {
                             </button>
                         </div>
                     </form>
+
+                    <div className="mt-6 pt-6 border-t border-gray-100">
+                        <Link
+                            href="/"
+                            className="flex justify-center items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#111111] transition-colors"
+                        >
+                            Asosiy sahifaga qaytish
+                        </Link>
+                    </div>
                 </div>
             </motion.div>
         </div>
