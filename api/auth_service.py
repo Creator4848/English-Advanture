@@ -26,10 +26,11 @@ oauth2   = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def hash_password(password: str) -> str:
-    return pwd_ctx.hash(password)
+    # bcrypt supports max 72 bytes; truncate safely
+    return pwd_ctx.hash(password.encode("utf-8")[:72])
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_ctx.verify(plain, hashed)
+    return pwd_ctx.verify(plain.encode("utf-8")[:72], hashed)
 
 def create_token(user_id: int) -> str:
     expire = datetime.now(tz=timezone.utc) + timedelta(minutes=TOKEN_TTL)
