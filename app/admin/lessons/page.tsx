@@ -47,9 +47,12 @@ export default function AdminLessonsPage() {
     const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({ ...DEFAULT_FORM });
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const fetchLessons = async () => {
         setLoading(true);
+        setErrorMsg(null);
         try {
             const res = await fetch("/api/videos");
             if (!res.ok) {
@@ -63,7 +66,7 @@ export default function AdminLessonsPage() {
             setLessons(data);
         } catch (err: any) {
             console.error("Failed to fetch lessons:", err);
-            alert(`Darslarni yuklashda xatolik: ${err.message}`);
+            setErrorMsg(err.message);
         } finally {
             setLoading(false);
         }
@@ -127,31 +130,34 @@ export default function AdminLessonsPage() {
 
             if (res.ok) {
                 setIsModalOpen(false);
+                setSaveError(null);
                 fetchLessons();
             } else {
                 const ct = res.headers.get("content-type");
                 if (ct?.includes("application/json")) {
                     const d = await res.json();
-                    alert(`Xatolik: ${d.detail || "Saqlash bo'lmadi"}`);
+                    setSaveError(d.detail || "Saqlash bo'lmadi");
                 } else {
                     const txt = await res.text();
-                    alert(`Xatolik: ${txt.substring(0, 200)}`);
+                    const clean = txt.includes("<!DOCTYPE") ? "Server xatosi (500). Backend ishlamayapti." : txt.substring(0, 150);
+                    setSaveError(clean);
                 }
             }
         } catch (err: any) {
-            alert(`Xatolik: ${err.message}`);
+            setSaveError(err.message);
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("Haqiqatan ham o'chirmoqchimisiz?")) return;
+        if (!window.confirm("Haqiqatan ham o'chirmoqchimisiz?")) return;
         try {
             const res = await fetch(`/api/videos/${id}`, { method: "DELETE" });
             if (res.ok) fetchLessons();
+            else setErrorMsg("O'chirishda xatolik!");
         } catch {
-            alert("O'chirishda xatolik!");
+            setErrorMsg("O'chirishda server bilan bog'lanib bo'lmadi!");
         }
     };
 
@@ -180,6 +186,21 @@ export default function AdminLessonsPage() {
                     Yangi dars qo'shish <Plus className="w-4 h-4" />
                 </button>
             </div>
+
+            {/* Inline error banner */}
+            {errorMsg && (
+                <div className="mb-6 px-5 py-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-medium text-sm flex items-start gap-3">
+                    <span className="text-xl">⚠️</span>
+                    <div>
+                        <p className="font-bold text-red-300 mb-0.5">Server xatosi</p>
+                        <p className="text-xs opacity-80">{errorMsg}</p>
+                        <button
+                            onClick={() => fetchLessons()}
+                            className="mt-2 text-xs font-bold text-red-300 hover:text-white underline"
+                        >Qayta urinish →</button>
+                    </div>
+                </div>
+            )}
 
             {/* Table Card */}
             <div className="adm-card overflow-hidden">
@@ -504,25 +525,32 @@ export default function AdminLessonsPage() {
                             </div>
 
                             {/* Modal Footer */}
-                            <div className="p-6 pt-0 flex gap-3 flex-shrink-0">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 px-6 py-3 rounded-xl font-black text-gray-400 bg-white/5 hover:bg-white/10 transition-all"
-                                >
-                                    Bekor qilish
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="flex-1 px-6 py-3 rounded-xl font-black text-[#111111] bg-[#FFC107] hover:bg-[#FFD54F] shadow-lg shadow-[#FFC107]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                >
-                                    {saving ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : (
-                                        <>Saqlash ✓</>
-                                    )}
-                                </button>
+                            <div className="p-6 pt-0 flex-shrink-0">
+                                {saveError && (
+                                    <div className="mb-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-medium flex items-center gap-2">
+                                        ⚠️ {saveError}
+                                    </div>
+                                )}
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setIsModalOpen(false); setSaveError(null); }}
+                                        className="flex-1 px-6 py-3 rounded-xl font-black text-gray-400 bg-white/5 hover:bg-white/10 transition-all"
+                                    >
+                                        Bekor qilish
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={saving}
+                                        className="flex-1 px-6 py-3 rounded-xl font-black text-[#111111] bg-[#FFC107] hover:bg-[#FFD54F] shadow-lg shadow-[#FFC107]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {saving ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <>Saqlash ✓</>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>

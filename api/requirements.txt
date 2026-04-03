@@ -10,4 +10,5 @@ redis
 pydantic[email]>=2.0.0
 python-multipart
 groq
+psycopg2-binary
 
