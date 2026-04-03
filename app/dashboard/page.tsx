@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { BookOpen, CheckCircle, Mic, Star, Trophy, Zap, ArrowRight } from "lucide-react";
+import Header from "@/components/Header";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
 const USER_ID = 1;
@@ -65,7 +66,8 @@ export default function DashboardPage() {
     const nextLevelXP = XP_PER_LEVEL - levelXP;
 
     return (
-        <main className="min-h-screen bg-gray-50" id="dashboard-page">
+        <main className="min-h-screen bg-gray-50 flex flex-col" id="dashboard-page">
+            <Header />
 
             {/* Header */}
             <div className="bg-[#111111] px-6 lg:px-20 py-12">

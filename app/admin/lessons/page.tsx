@@ -19,9 +19,22 @@ interface Lesson {
 }
 
 const CATEGORIES = [
-    "Hayvonlar", "Ranglar", "Raqamlar", "Oila", "Ovqatlar",
-    "Mevalar", "Kiyimlar", "Transport", "Tananing a'zolari",
-    "Kasb-hunar", "Tabiat", "Uy buyumlari", "Sport", "Umumiy"
+    "My Family",
+    "English Alphabet for Kids",
+    "ABC Song for Kids",
+    "Learning Colors In English",
+    "Learning Shapes in English",
+    "Days of the Week",
+    "Greetings and First Meeting",
+    "Me, You, and They",
+    "My Body and Face",
+    "Yummy Food and Drinks",
+    "Fruits and Vegetables",
+    "My School Objects",
+    "Animals",
+    "Transport",
+    "Beautiful Nature",
+    "Clothes"
 ];
 
 const DEFAULT_FORM = {
@@ -255,7 +268,16 @@ export default function AdminLessonsPage() {
                                             <div className="flex items-center gap-3">
                                                 <div className="w-16 h-10 rounded-lg bg-[#21253A] flex items-center justify-center relative overflow-hidden flex-shrink-0">
                                                     {lesson.thumbnail_url ? (
-                                                        <img src={lesson.thumbnail_url} className="w-full h-full object-cover" alt="thumb" />
+                                                        <img
+                                                            src={lesson.thumbnail_url}
+                                                            className="w-full h-full object-cover"
+                                                            alt="thumb"
+                                                            onError={(e) => {
+                                                                if (!e.currentTarget.src.includes('hqdefault')) {
+                                                                    e.currentTarget.src = `https://img.youtube.com/vi/${lesson.youtube_id}/hqdefault.jpg`;
+                                                                }
+                                                            }}
+                                                        />
                                                     ) : (
                                                         <Video className="w-4 h-4 text-[#FFC107]" />
                                                     )}

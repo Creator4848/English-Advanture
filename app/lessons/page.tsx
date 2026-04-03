@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { BookOpen, Search, ChevronRight, Clock, Star, Play } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import Header from "@/components/Header";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -20,7 +21,15 @@ const MOCK_VIDEOS = [
     { id: 8, youtube_id: "6-2IJVf4gPM", title: "Body Parts 💪", topic: "Body Parts", difficulty: 1, duration_seconds: 190 },
 ];
 
-const TOPICS = ["All", "Colors", "Alphabet", "Animals", "Numbers", "Family", "Food", "Weather", "Body Parts"];
+const TOPICS = [
+    "All", "My Family", "English Alphabet for Kids", "ABC Song for Kids",
+    "Learning Colors In English", "Learning Shapes in English",
+    "Days of the Week", "Greetings and First Meeting",
+    "Me, You, and They", "My Body and Face",
+    "Yummy Food and Drinks", "Fruits and Vegetables",
+    "My School Objects", "Animals", "Transport",
+    "Beautiful Nature", "Clothes"
+];
 
 const DIFFICULTY_LABEL: Record<number, string> = { 1: "Beginner", 2: "Elementary", 3: "Pre-Intermediate" };
 const DIFFICULTY_COLOR: Record<number, string> = {
@@ -83,6 +92,7 @@ function LessonsInner() {
 
     return (
         <>
+            <Header />
             {/* Header */}
             <div className="bg-[#111111] py-14 px-6 lg:px-20">
                 <div className="max-w-7xl mx-auto">
@@ -122,8 +132,8 @@ function LessonsInner() {
                             id={`topic-${t.toLowerCase()}`}
                             onClick={() => setTopic(t)}
                             className={`px-4 py-2 rounded-full text-sm font-black transition-all ${topic === t
-                                    ? "bg-[#FFB800] text-[#111111] shadow-md"
-                                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                ? "bg-[#FFB800] text-[#111111] shadow-md"
+                                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                                 }`}
                         >
                             {t}

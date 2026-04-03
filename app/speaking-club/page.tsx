@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, Send, X, Star, Activity } from "lucide-react";
 import Link from "next/link";
+import Header from "@/components/Header";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -242,8 +243,9 @@ export default function SpeakingClubPage() {
     /* ── Topic Selection ───────────────────────────────────────── */
     if (phase === "select") {
         return (
-            <main className="min-h-screen bg-white px-6 lg:px-20 py-14" id="speaking-club-page">
-                <div className="max-w-4xl mx-auto">
+            <main className="min-h-screen bg-white" id="speaking-club-page">
+                <Header />
+                <div className="px-6 lg:px-20 py-14 max-w-4xl mx-auto">
                     <div className="badge mb-5">🎙️ AI Speaking Club</div>
                     <h1 className="text-4xl md:text-6xl font-black text-[#111111] mb-3">
                         Alex bilan <span className="text-[#FFB800]">Gaplash</span>
