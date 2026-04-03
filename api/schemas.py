@@ -160,3 +160,28 @@ class DashboardOut(BaseModel):
     quizzes_passed:   int
     speaking_minutes: int
     badges:           list[dict]
+
+# ── Teachers ──────────────────────────────────────────────────────────────────
+
+class TeacherCreate(BaseModel):
+    full_name:    str
+    role:         Optional[str] = "O'qituvchi"
+    experience:   Optional[str] = None
+    rating:       Optional[float] = 5.0
+    image_url:    Optional[str] = None
+    avatar_color: Optional[str] = None
+    bio:          Optional[str] = None
+
+class TeacherOut(BaseModel):
+    id:           int
+    full_name:    str
+    role:         Optional[str]
+    experience:   Optional[str]
+    rating:       Optional[float]
+    image_url:    Optional[str]
+    avatar_color: Optional[str]
+    bio:          Optional[str]
+    created_at:   Any
+
+    class Config:
+        from_attributes = True

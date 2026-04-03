@@ -38,6 +38,7 @@ try:
     from models import (
         User, Video, Quiz, QuizQuestion, QuizResult,
         VideoProgress, SpeakingSession, Achievement, UserAchievement,
+        Teacher
     )
     
     # Checkpoint 4: Schemas
@@ -47,7 +48,8 @@ try:
         VideoOut, VideoCreate, VideoUpdate,
         ProgressUpdateRequest, ProgressOut,
         QuizOut, QuizSubmitRequest, QuizResultOut, QuizProgressPayload,
-        SpeakingSessionOut, DashboardOut
+        SpeakingSessionOut, DashboardOut,
+        TeacherCreate, TeacherOut
     )
     
     # Checkpoint 5: Auth & Seed

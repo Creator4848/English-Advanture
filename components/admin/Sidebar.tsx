@@ -23,6 +23,11 @@ const NAV_ITEMS = [
         icon: Users,
     },
     {
+        label: "O'qituvchilar",
+        href: "/admin/teachers",
+        icon: Users,
+    },
+    {
         label: "AI Suhbatdosh",
         href: "/admin/ai",
         icon: Bot,

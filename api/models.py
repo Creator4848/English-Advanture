@@ -209,3 +209,19 @@ class Mission(Base):
     content         = Column(JSON)
     difficulty_rank = Column(Integer)
     category        = Column(String)
+
+# ─────────────────────────────────────────────
+# 10. TEACHERS
+# ─────────────────────────────────────────────
+class Teacher(Base):
+    __tablename__ = "teachers"
+
+    id           = Column(Integer, primary_key=True)
+    full_name    = Column(String(200), nullable=False)
+    role         = Column(String(100), default="O'qituvchi")
+    experience   = Column(String(100))
+    rating       = Column(Float, default=5.0)
+    image_url    = Column(Text)
+    avatar_color = Column(String(100))
+    bio          = Column(Text)
+    created_at   = Column(DateTime, server_default=func.now())
