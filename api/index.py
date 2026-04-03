@@ -569,6 +569,31 @@ def get_achievements(user_id: int, db: Session = Depends(get_db)):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+# TEACHERS
+# ═════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/teachers", response_model=list[TeacherOut])
+def get_teachers(db: Session = Depends(get_db)):
+    return db.query(Teacher).order_by(Teacher.id.desc()).all()
+
+@app.post("/api/teachers", response_model=TeacherOut)
+def create_teacher(body: TeacherCreate, db: Session = Depends(get_db)):
+    teacher = Teacher(**body.model_dump())
+    db.add(teacher)
+    db.commit()
+    db.refresh(teacher)
+    return teacher
+
+@app.delete("/api/teachers/{teacher_id}")
+def delete_teacher(teacher_id: int, db: Session = Depends(get_db)):
+    teacher = db.query(Teacher).filter(Teacher.id == teacher_id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    db.delete(teacher)
+    db.commit()
+    return {"status": "success", "message": "Teacher deleted"}
+
+# ═════════════════════════════════════════════════════════════════════════════
 # AI SPEAKING CLUB
 # ═════════════════════════════════════════════════════════════════════════════
 @app.get("/api/speaking/topics")
