@@ -4,7 +4,8 @@ sqlalchemy
 python-dotenv
 openai
 httpx
-passlib[bcrypt]
+passlib
+bcrypt==3.2.2
 python-jose[cryptography]
 redis
 pydantic[email]>=2.0.0
