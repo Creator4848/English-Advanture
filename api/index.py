@@ -495,6 +495,22 @@ def quiz_results(quiz_id: int, user_id: int, db: Session = Depends(get_db)):
 # ═════════════════════════════════════════════════════════════════════════════
 # PROGRESS / DASHBOARD
 # ═════════════════════════════════════════════════════════════════════════════
+
+class QuizProgressPayload(BaseModel):
+    user_id: int
+    xp_earned: int
+    coins_earned: int = 0
+
+@app.post("/api/progress/quiz")
+async def add_quiz_progress(body: QuizProgressPayload, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == body.user_id).first()
+    if user:
+        user.xp += body.xp_earned
+        user.coins += body.coins_earned
+        db.commit()
+        return {"status": "success", "xp": user.xp, "coins": user.coins}
+    raise HTTPException(status_code=404, detail="User not found")
+
 @app.get("/api/progress/{user_id}", response_model=DashboardOut)
 def get_dashboard(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()

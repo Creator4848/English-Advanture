@@ -5,9 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Star, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
-const USER_ID = 1;
 
 /* ── Mock quiz data ────────────────────────────────────────────────── */
 const MOCK_QUIZ = {
@@ -126,7 +126,21 @@ function ResultScreen({
 /* ── Main Quiz Page ────────────────────────────────────────────────── */
 export default function QuizPage() {
     const params = useParams();
+    const router = useRouter();
     const lessonId = params?.lessonId as string;
+
+    const [userId, setUserId] = useState<number>(0);
+
+    useEffect(() => {
+        const token = localStorage.getItem("user_token");
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+        const userInfoRaw = localStorage.getItem("user_info");
+        const userInfo = userInfoRaw ? JSON.parse(userInfoRaw) : {};
+        setUserId(userInfo.user?.id || userInfo.user_id || userInfo.id || 1);
+    }, [router]);
 
     const [quiz] = useState(MOCK_QUIZ);
     const [current, setCurrent] = useState(0);
@@ -155,29 +169,27 @@ export default function QuizPage() {
             // Submit
             setSubmitting(true);
             const allAnswers = { ...answers, [String(q.id)]: selected || "" };
+
+            const correct = quiz.questions.filter(
+                (qq) => allAnswers[String(qq.id)] === qq.correct_ans
+            ).length;
+            const score = Math.round((correct / total) * 100);
+            const xp_earned = correct * 15;
+            const coins_earned = correct * 2;
+            const passed = score >= 70;
+
             try {
-                const res = await fetch(`${API}/quiz/${quiz.id}/submit`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ user_id: USER_ID, answers: allAnswers }),
-                });
-                if (res.ok) {
-                    setResult(await res.json());
-                } else {
-                    // Local scoring fallback
-                    const correct = quiz.questions.filter(
-                        (qq) => allAnswers[String(qq.id)] === qq.correct_ans
-                    ).length;
-                    const score = Math.round((correct / total) * 100);
-                    setResult({ score, passed: score >= 70, correct, total, xp_earned: correct * 15, new_badges: [] });
+                if (userId > 0) {
+                    await fetch(`${API}/progress/quiz`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ user_id: userId, xp_earned, coins_earned }),
+                    });
                 }
-            } catch {
-                const correct = quiz.questions.filter(
-                    (qq) => allAnswers[String(qq.id)] === qq.correct_ans
-                ).length;
-                const score = Math.round((correct / total) * 100);
-                setResult({ score, passed: score >= 70, correct, total, xp_earned: correct * 15, new_badges: [] });
+            } catch (err) {
+                console.error("Progress save failed:", err);
             } finally {
+                setResult({ score, passed, correct, total, xp_earned, new_badges: [] });
                 setSubmitting(false);
             }
         }
@@ -286,8 +298,8 @@ export default function QuizPage() {
                         {revealed && (
                             <motion.div
                                 className={`rounded-xl p-4 mb-6 ${selected === q.correct_ans
-                                        ? "bg-green-50 border border-green-200"
-                                        : "bg-red-50 border border-red-200"
+                                    ? "bg-green-50 border border-green-200"
+                                    : "bg-red-50 border border-red-200"
                                     }`}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
