@@ -77,7 +77,10 @@ export default function AdminTeachersPage() {
                 body: JSON.stringify(formData),
             });
 
-            if (!res.ok) throw new Error("Saqlashda xatolik yuz berdi");
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ detail: "Noma'lum server xatosi" }));
+                throw new Error(errorData.detail || `Server xatosi: ${res.status}`);
+            }
 
             await fetchTeachers();
             setIsModalOpen(false);
