@@ -549,7 +549,18 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
         .scalar() or 0
     ) // 60
 
-    badges = get_quiz_svc().check_achievements(db, user_id)
+    # Check & grant new achievements, then fetch all earned ones
+    get_quiz_svc().check_achievements(db, user_id)
+    earned_achievements = (
+        db.query(Achievement)
+        .join(UserAchievement, UserAchievement.achievement_id == Achievement.id)
+        .filter(UserAchievement.user_id == user_id)
+        .all()
+    )
+    badges_list = [
+        {"code": a.code, "name": a.name, "icon_url": a.icon_url or ""}
+        for a in earned_achievements
+    ]
 
     return DashboardOut(
         user_id              = user.id,
@@ -562,10 +573,92 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
         videos_completed     = videos_done,
         quizzes_passed       = quizzes_done,
         speaking_minutes     = minutes,
-        badges               = [{"code": b.code, "name": b.name, "icon_url": b.icon_url} for b in badges] if isinstance(badges, list) else [],
+        badges               = badges_list,
         placement_level      = getattr(user, "placement_level", None),
         placement_completed  = getattr(user, "placement_completed", False) or False,
     )
+
+
+def _time_ago(dt) -> str:
+    if not dt:
+        return "Noma'lum"
+    from datetime import datetime
+    diff = datetime.utcnow() - dt
+    total_secs = diff.total_seconds()
+    if total_secs < 60:
+        return "Hozirgina"
+    if total_secs < 3600:
+        return f"{int(total_secs // 60)} daqiqa oldin"
+    if diff.days == 0:
+        return f"{int(total_secs // 3600)} soat oldin"
+    if diff.days == 1:
+        return "Kecha"
+    return f"{diff.days} kun oldin"
+
+
+@app.get("/api/activity/{user_id}")
+def get_activity(user_id: int, db: Session = Depends(get_db)):
+    """Return recent user activity: videos watched, quizzes passed, speaking sessions."""
+    activities = []
+
+    # Recent completed videos
+    video_rows = (
+        db.query(VideoProgress, Video)
+        .join(Video, VideoProgress.video_id == Video.id)
+        .filter(VideoProgress.user_id == user_id, VideoProgress.completed == True)
+        .order_by(VideoProgress.updated_at.desc())
+        .limit(5)
+        .all()
+    )
+    for vp, v in video_rows:
+        activities.append({
+            "icon": "🎬",
+            "text": f"{v.title} darsini ko'rdingiz",
+            "xp":   f"+{vp.xp_earned} XP",
+            "time": _time_ago(vp.updated_at),
+            "_ts":  vp.updated_at.timestamp() if vp.updated_at else 0,
+        })
+
+    # Recent passed quizzes
+    quiz_rows = (
+        db.query(QuizResult, Quiz)
+        .join(Quiz, QuizResult.quiz_id == Quiz.id)
+        .filter(QuizResult.user_id == user_id, QuizResult.passed == True)
+        .order_by(QuizResult.completed_at.desc())
+        .limit(5)
+        .all()
+    )
+    for qr, qz in quiz_rows:
+        activities.append({
+            "icon": "📝",
+            "text": f"{qz.title or 'Quiz'}-ni bajardingiz ({qr.score}%)",
+            "xp":   f"+{qr.xp_earned} XP",
+            "time": _time_ago(qr.completed_at),
+            "_ts":  qr.completed_at.timestamp() if qr.completed_at else 0,
+        })
+
+    # Recent speaking sessions
+    speak_rows = (
+        db.query(SpeakingSession)
+        .filter(SpeakingSession.user_id == user_id)
+        .order_by(SpeakingSession.created_at.desc())
+        .limit(3)
+        .all()
+    )
+    for s in speak_rows:
+        mins = (s.duration_sec or 0) // 60
+        activities.append({
+            "icon": "🎙️",
+            "text": f"AI Speaking Club'da {mins} daqiqa gaplashdingiz",
+            "xp":   "+50 XP",
+            "time": _time_ago(s.created_at),
+            "_ts":  s.created_at.timestamp() if s.created_at else 0,
+        })
+
+    activities.sort(key=lambda x: x["_ts"], reverse=True)
+    for a in activities:
+        a.pop("_ts", None)
+    return activities[:10]
 
 
 @app.get("/api/leaderboard")

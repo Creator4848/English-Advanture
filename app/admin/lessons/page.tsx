@@ -179,12 +179,17 @@ export default function AdminLessonsPage() {
         l.topic.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const diffLabel = (d: number) =>
-        d === 1 ? "Boshlang'ich" : d === 2 ? "O'rta" : "Yuqori";
-    const diffClass = (d: number) =>
-        d === 1 ? "text-green-400 bg-green-400/10 border-green-400/20"
-            : d === 2 ? "text-yellow-400 bg-yellow-400/10 border-yellow-400/20"
-                : "text-red-400 bg-red-400/10 border-red-400/20";
+    const DIFF_LEVELS: Record<number, { label: string; cls: string }> = {
+        1: { label: "A0 – Starters",          cls: "text-gray-300  bg-gray-400/10  border-gray-400/20"   },
+        2: { label: "A1 – Elementary",         cls: "text-green-400 bg-green-400/10 border-green-400/20"  },
+        3: { label: "A2 – Pre-Intermediate",   cls: "text-teal-400  bg-teal-400/10  border-teal-400/20"   },
+        4: { label: "B1 – Intermediate",       cls: "text-blue-400  bg-blue-400/10  border-blue-400/20"   },
+        5: { label: "B2 – Upper-Intermediate", cls: "text-indigo-400 bg-indigo-400/10 border-indigo-400/20" },
+        6: { label: "C1 – Advanced",           cls: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
+        7: { label: "C2 – Proficiency",        cls: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
+    };
+    const diffLabel = (d: number) => DIFF_LEVELS[d]?.label || `Daraja ${d}`;
+    const diffClass  = (d: number) => DIFF_LEVELS[d]?.cls   || "text-gray-400 bg-gray-400/10 border-gray-400/20";
 
     return (
         <div className="p-6 lg:p-10 max-w-[1400px] mx-auto pb-24">
@@ -410,9 +415,13 @@ export default function AdminLessonsPage() {
                                             value={formData.difficulty}
                                             onChange={(e) => setFormData({ ...formData, difficulty: parseInt(e.target.value) })}
                                         >
-                                            <option value={1}>🟢 Boshlang'ich</option>
-                                            <option value={2}>🟡 O'rta</option>
-                                            <option value={3}>🔴 Yuqori</option>
+                                            <option value={1}>⚪ A0 – Starters</option>
+                                            <option value={2}>🟢 A1 – Elementary</option>
+                                            <option value={3}>🟦 A2 – Pre-Intermediate</option>
+                                            <option value={4}>🔵 B1 – Intermediate</option>
+                                            <option value={5}>🟣 B2 – Upper-Intermediate</option>
+                                            <option value={6}>🟠 C1 – Advanced</option>
+                                            <option value={7}>🏆 C2 – Proficiency</option>
                                         </select>
                                     </div>
                                 </div>

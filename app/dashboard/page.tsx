@@ -10,33 +10,26 @@ import Header from "@/components/Header";
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 const MOCK_DASHBOARD = {
-    user_id: 1,
-    username: "Ali",
-    full_name: "Ali Valiyev",
-    level: 3,
-    xp: 2450,
-    coins: 180,
-    videos_completed: 8,
-    quizzes_passed: 5,
-    speaking_minutes: 12,
-    badges: [
-        { code: "first_video", name: "Birinchi Dars 🎬", icon_url: "" },
-        { code: "quiz_hero", name: "Test Qahramoni 🏆", icon_url: "" },
-        { code: "speaker", name: "Suhbatchi 🎙️", icon_url: "" },
-    ],
+    user_id: 0,
+    username: "",
+    full_name: "",
+    level: 1,
+    xp: 0,
+    coins: 0,
+    videos_completed: 0,
+    quizzes_passed: 0,
+    speaking_minutes: 0,
+    badges: [] as any[],
+    placement_level: null,
+    placement_completed: false,
 };
 
 const XP_PER_LEVEL = 1000;
 
-const RECENT_ACTIVITIES = [
-    { icon: "🎬", text: "Colors in English darsini ko'rdingiz", xp: "+50 XP", time: "1 soat oldin" },
-    { icon: "📝", text: "Colors Quiz-ni bajardingiz (90%)", xp: "+135 XP", time: "1 soat oldin" },
-    { icon: "🎙️", text: "Alex bilan 5 daqiqa inglizcha gaplashdingiz", xp: "+50 XP", time: "Kecha" },
-];
-
 export default function DashboardPage() {
     const router = useRouter();
     const [data, setData] = useState<any>(null);
+    const [activities, setActivities] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -48,14 +41,18 @@ export default function DashboardPage() {
 
         const userInfoRaw = localStorage.getItem("user_info");
         const userInfo = userInfoRaw ? JSON.parse(userInfoRaw) : {};
-        // The user object could be nested or flat depending on how api/index.py returns it
-        const uId = userInfo.user?.id || userInfo.user_id || userInfo.id || 1;
+        const uId = userInfo.user?.id || userInfo.user_id || userInfo.id;
+        if (!uId) { router.push("/login"); return; }
 
         (async () => {
             try {
-                const res = await fetch(`${API}/progress/${uId}`);
-                if (res.ok) setData(await res.json());
+                const [dashRes, actRes] = await Promise.all([
+                    fetch(`${API}/progress/${uId}`),
+                    fetch(`${API}/activity/${uId}`),
+                ]);
+                if (dashRes.ok) setData(await dashRes.json());
                 else setData(MOCK_DASHBOARD);
+                if (actRes.ok) setActivities(await actRes.json());
             } catch {
                 setData(MOCK_DASHBOARD);
             } finally {
@@ -271,26 +268,33 @@ export default function DashboardPage() {
                         <h2 className="font-black text-[#111111] text-xl mb-5 flex items-center gap-2">
                             <Zap className="w-5 h-5 text-[#FFB800]" /> So'nggi Faollik
                         </h2>
-                        <div className="space-y-4">
-                            {RECENT_ACTIVITIES.map((a, i) => (
-                                <motion.div
-                                    key={i}
-                                    className="flex items-start gap-3"
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                >
-                                    <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-lg flex-shrink-0">
-                                        {a.icon}
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-[#111111]">{a.text}</p>
-                                        <p className="text-xs text-gray-400 font-medium mt-0.5">{a.time}</p>
-                                    </div>
-                                    <span className="badge text-xs">{a.xp}</span>
-                                </motion.div>
-                            ))}
-                        </div>
+                        {activities.length > 0 ? (
+                            <div className="space-y-4">
+                                {activities.map((a: any, i: number) => (
+                                    <motion.div
+                                        key={i}
+                                        className="flex items-start gap-3"
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: i * 0.1 }}
+                                    >
+                                        <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-lg flex-shrink-0">
+                                            {a.icon}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-[#111111]">{a.text}</p>
+                                            <p className="text-xs text-gray-400 font-medium mt-0.5">{a.time}</p>
+                                        </div>
+                                        <span className="badge text-xs">{a.xp}</span>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-gray-400">
+                                <Zap className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                                <p className="font-medium text-sm">Hali faollik yo'q. Birinchi darsni boshlang!</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
