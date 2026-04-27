@@ -138,28 +138,14 @@ async def startup_event():
             conn.execute(text("SELECT 1"))
         print("✅ DB connection success")
         
-        # ── Migrations ──
+        # ── Migrations (IF NOT EXISTS avoids transaction abort on PostgreSQL) ──
         print("DEBUG: Running auto-migrations...")
         with engine.connect() as conn:
-            # 1. Add last_login to users if missing
-            try:
-                conn.execute(text("ALTER TABLE users ADD COLUMN last_login TIMESTAMP"))
-                conn.commit()
-                print("✅ Migration: Added 'last_login' to users")
-            except Exception:
-                pass
-            try:
-                conn.execute(text("ALTER TABLE users ADD COLUMN placement_level VARCHAR(10)"))
-                conn.commit()
-                print("✅ Migration: Added 'placement_level' to users")
-            except Exception:
-                pass
-            try:
-                conn.execute(text("ALTER TABLE users ADD COLUMN placement_completed BOOLEAN DEFAULT FALSE"))
-                conn.commit()
-                print("✅ Migration: Added 'placement_completed' to users")
-            except Exception:
-                pass
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS placement_level VARCHAR(10)"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS placement_completed BOOLEAN DEFAULT FALSE"))
+            conn.commit()
+            print("✅ Migrations applied (IF NOT EXISTS)")
         
         models.Base.metadata.create_all(bind=engine)
         print("✅ Database tables created/verified")
