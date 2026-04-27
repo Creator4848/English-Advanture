@@ -1048,7 +1048,7 @@ def submit_placement(body: PlacementSubmitRequest, db: Session = Depends(get_db)
         raise HTTPException(404, "User not found")
 
     q_map    = {q["id"]: q for q in PLACEMENT_QUESTIONS}
-    score    = sum(q["points"] for qid, ans in body.answers.items()
+    score    = sum(q_map[qid]["points"] for qid, ans in body.answers.items()
                    if qid in q_map and q_map[qid]["correct"] == ans)
     level    = _calculate_placement_level(score, _PLACEMENT_MAX)
     pct      = round((score / _PLACEMENT_MAX) * 100)
