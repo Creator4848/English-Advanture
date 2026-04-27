@@ -96,6 +96,8 @@ class QuizQuestionOut(BaseModel):
     question:           str
     question_image_url: Optional[str]
     options:            list[QuizOptionOut]
+    correct_ans:        str
+    points:             int = 10
     order_index:        Optional[int]
 
     class Config:
