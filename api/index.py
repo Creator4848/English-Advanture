@@ -50,7 +50,8 @@ try:
         QuizOut, QuizSubmitRequest, QuizResultOut, QuizProgressPayload,
         SpeakingSessionOut, DashboardOut,
         TeacherCreate, TeacherOut,
-        AdminDashboardOut, UserAdminOut, SystemSettingOut
+        AdminDashboardOut, UserAdminOut, SystemSettingOut,
+        PlacementSubmitRequest, PlacementResultOut
     )
     
     # Checkpoint 5: Auth & Seed
@@ -142,13 +143,22 @@ async def startup_event():
         with engine.connect() as conn:
             # 1. Add last_login to users if missing
             try:
-                # Use a dialect-neutral way or check for column existence
-                # For PostgreSQL/SQLite compatibility:
                 conn.execute(text("ALTER TABLE users ADD COLUMN last_login TIMESTAMP"))
                 conn.commit()
                 print("✅ Migration: Added 'last_login' to users")
             except Exception:
-                # Likely already exists
+                pass
+            try:
+                conn.execute(text("ALTER TABLE users ADD COLUMN placement_level VARCHAR(10)"))
+                conn.commit()
+                print("✅ Migration: Added 'placement_level' to users")
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE users ADD COLUMN placement_completed BOOLEAN DEFAULT FALSE"))
+                conn.commit()
+                print("✅ Migration: Added 'placement_completed' to users")
+            except Exception:
                 pass
         
         models.Base.metadata.create_all(bind=engine)
@@ -556,17 +566,19 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
     badges = get_quiz_svc().check_achievements(db, user_id)
 
     return DashboardOut(
-        user_id          = user.id,
-        username         = user.username,
-        full_name        = user.full_name,
-        avatar_url       = user.avatar_url,
-        level            = user.level,
-        xp               = user.xp,
-        coins            = user.coins,
-        videos_completed = videos_done,
-        quizzes_passed   = quizzes_done,
-        speaking_minutes = minutes,
-        badges           = [{"code": b.code, "name": b.name, "icon_url": b.icon_url} for b in badges] if isinstance(badges, list) else [],
+        user_id              = user.id,
+        username             = user.username,
+        full_name            = user.full_name,
+        avatar_url           = user.avatar_url,
+        level                = user.level,
+        xp                   = user.xp,
+        coins                = user.coins,
+        videos_completed     = videos_done,
+        quizzes_passed       = quizzes_done,
+        speaking_minutes     = minutes,
+        badges               = [{"code": b.code, "name": b.name, "icon_url": b.icon_url} for b in badges] if isinstance(badges, list) else [],
+        placement_level      = getattr(user, "placement_level", None),
+        placement_completed  = getattr(user, "placement_completed", False) or False,
     )
 
 
@@ -912,6 +924,174 @@ async def voice_handler(
 # ═════════════════════════════════════════════════════════════════════════════
 # LEGACY – Speech analysis  (kept for backward-compat)
 # ═════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
+# PLACEMENT TEST
+# ═════════════════════════════════════════════════════════════════════════════
+
+PLACEMENT_QUESTIONS = [
+    # ── A0 ──────────────────────────────────────────────────────────────────
+    {"id": "q1",  "question": "What color is the sky on a sunny day?",
+     "options": [{"id":"a","text":"Red"},{"id":"b","text":"Blue"},{"id":"c","text":"Green"},{"id":"d","text":"Yellow"}],
+     "correct": "b", "level": "A0", "points": 1},
+    {"id": "q2",  "question": "What number comes after 3?",
+     "options": [{"id":"a","text":"2"},{"id":"b","text":"5"},{"id":"c","text":"4"},{"id":"d","text":"6"}],
+     "correct": "c", "level": "A0", "points": 1},
+    {"id": "q3",  "question": "How do you greet someone in the morning?",
+     "options": [{"id":"a","text":"Good night"},{"id":"b","text":"Good evening"},{"id":"c","text":"Good morning"},{"id":"d","text":"Goodbye"}],
+     "correct": "c", "level": "A0", "points": 1},
+    # ── A1 ──────────────────────────────────────────────────────────────────
+    {"id": "q4",  "question": "Choose the correct sentence:",
+     "options": [{"id":"a","text":"I is a student."},{"id":"b","text":"I am a student."},{"id":"c","text":"I are a student."},{"id":"d","text":"I be a student."}],
+     "correct": "b", "level": "A1", "points": 2},
+    {"id": "q5",  "question": "She ___ to school every day.",
+     "options": [{"id":"a","text":"go"},{"id":"b","text":"goes"},{"id":"c","text":"going"},{"id":"d","text":"gone"}],
+     "correct": "b", "level": "A1", "points": 2},
+    {"id": "q6",  "question": "What is the plural of 'child'?",
+     "options": [{"id":"a","text":"childs"},{"id":"b","text":"childes"},{"id":"c","text":"children"},{"id":"d","text":"childrens"}],
+     "correct": "c", "level": "A1", "points": 2},
+    {"id": "q7",  "question": "How do you say 3:30?",
+     "options": [{"id":"a","text":"Three and half"},{"id":"b","text":"Half past three"},{"id":"c","text":"Half to three"},{"id":"d","text":"Three thirty past"}],
+     "correct": "b", "level": "A1", "points": 2},
+    # ── A2 ──────────────────────────────────────────────────────────────────
+    {"id": "q8",  "question": "I ___ already eaten lunch.",
+     "options": [{"id":"a","text":"have"},{"id":"b","text":"has"},{"id":"c","text":"had"},{"id":"d","text":"having"}],
+     "correct": "a", "level": "A2", "points": 3},
+    {"id": "q9",  "question": "She is ___ than her sister.",
+     "options": [{"id":"a","text":"more tall"},{"id":"b","text":"tallest"},{"id":"c","text":"taller"},{"id":"d","text":"most tall"}],
+     "correct": "c", "level": "A2", "points": 3},
+    {"id": "q10", "question": "If it ___ tomorrow, we will stay home.",
+     "options": [{"id":"a","text":"rain"},{"id":"b","text":"rains"},{"id":"c","text":"rained"},{"id":"d","text":"is raining"}],
+     "correct": "b", "level": "A2", "points": 3},
+    {"id": "q11", "question": "He said that he ___ tired.",
+     "options": [{"id":"a","text":"is"},{"id":"b","text":"was"},{"id":"c","text":"be"},{"id":"d","text":"were"}],
+     "correct": "b", "level": "A2", "points": 3},
+    # ── B1 ──────────────────────────────────────────────────────────────────
+    {"id": "q12", "question": "By the time she arrived, we ___ dinner.",
+     "options": [{"id":"a","text":"finished"},{"id":"b","text":"have finished"},{"id":"c","text":"had finished"},{"id":"d","text":"finish"}],
+     "correct": "c", "level": "B1", "points": 4},
+    {"id": "q13", "question": "The report ___ next week.",
+     "options": [{"id":"a","text":"will be submitted"},{"id":"b","text":"will submit"},{"id":"c","text":"is submitting"},{"id":"d","text":"submits"}],
+     "correct": "a", "level": "B1", "points": 4},
+    {"id": "q14", "question": "I wish I ___ more time to study.",
+     "options": [{"id":"a","text":"have"},{"id":"b","text":"had"},{"id":"c","text":"has"},{"id":"d","text":"having"}],
+     "correct": "b", "level": "B1", "points": 4},
+    # ── B2 ──────────────────────────────────────────────────────────────────
+    {"id": "q15", "question": "Despite ___ hard all year, she failed the exam.",
+     "options": [{"id":"a","text":"studying"},{"id":"b","text":"to study"},{"id":"c","text":"studied"},{"id":"d","text":"study"}],
+     "correct": "a", "level": "B2", "points": 5},
+    {"id": "q16", "question": "The new regulations, ___ were introduced last month, have caused controversy.",
+     "options": [{"id":"a","text":"which"},{"id":"b","text":"that"},{"id":"c","text":"who"},{"id":"d","text":"what"}],
+     "correct": "a", "level": "B2", "points": 5},
+    {"id": "q17", "question": "Had I known about the meeting, I ___ on time.",
+     "options": [{"id":"a","text":"would have arrived"},{"id":"b","text":"would arrive"},{"id":"c","text":"arrived"},{"id":"d","text":"had arrived"}],
+     "correct": "a", "level": "B2", "points": 5},
+    # ── C1 ──────────────────────────────────────────────────────────────────
+    {"id": "q18", "question": "The professor's lecture was so ___ that half the audience fell asleep.",
+     "options": [{"id":"a","text":"fascinating"},{"id":"b","text":"tedious"},{"id":"c","text":"riveting"},{"id":"d","text":"stimulating"}],
+     "correct": "b", "level": "C1", "points": 6},
+    {"id": "q19", "question": "The scientist's findings were ___ by subsequent research, confirming all her predictions.",
+     "options": [{"id":"a","text":"refuted"},{"id":"b","text":"debunked"},{"id":"c","text":"corroborated"},{"id":"d","text":"contradicted"}],
+     "correct": "c", "level": "C1", "points": 6},
+    # ── C2 ──────────────────────────────────────────────────────────────────
+    {"id": "q20", "question": "Which sentence is grammatically correct?",
+     "options": [
+         {"id":"a","text":"Neither of the students have submitted their work."},
+         {"id":"b","text":"The data was analyzed thoroughly."},
+         {"id":"c","text":"She is one of those people who cares about the environment."},
+         {"id":"d","text":"No sooner had she left than the phone rang."},
+     ],
+     "correct": "d", "level": "C2", "points": 7},
+]
+
+# Max score = 3*1 + 4*2 + 4*3 + 3*4 + 3*5 + 2*6 + 1*7 = 3+8+12+12+15+12+7 = 69
+_PLACEMENT_MAX = sum(q["points"] for q in PLACEMENT_QUESTIONS)
+
+LEVEL_INFO = {
+    "A0": {"name": "Starters",          "description": "Siz endi o'rganishni boshlayapsiz!"},
+    "A1": {"name": "Elementary",         "description": "Sizda asosiy tushunchalar bor."},
+    "A2": {"name": "Pre-Intermediate",   "description": "Siz oddiy mavzularda muloqot qila olasiz."},
+    "B1": {"name": "Intermediate",       "description": "Mustaqil suhbatdosh – Kundalik mavzularda bemalol gaplasha olasiz va qiziqishlaringiz haqida bayonot bera olasiz."},
+    "B2": {"name": "Upper-Intermediate", "description": "Ishonchli muloqot – Murakkab matnlarni tushuna olasiz va ona tilida so'zlashuvchilar bilan ravon muloqot qila olasiz."},
+    "C1": {"name": "Advanced",           "description": "Ilg'or daraja – Tildan akademik va professional maqsadlarda moslashuvchan foydalana olasiz. Yashirin ma'nolarni va kinoyalarni tushunasiz."},
+    "C2": {"name": "Proficiency",        "description": "Mukammal/Ekspert – Deyarli hamma narsani oson tushunasiz. Ona tili darajasida, juda aniq va ravon so'zlaysiz."},
+}
+
+def _calculate_placement_level(score: int, max_score: int) -> str:
+    pct = (score / max_score) * 100 if max_score > 0 else 0
+    if pct < 15:   return "A0"
+    if pct < 29:   return "A1"
+    if pct < 43:   return "A2"
+    if pct < 57:   return "B1"
+    if pct < 71:   return "B2"
+    if pct < 86:   return "C1"
+    return "C2"
+
+
+@app.get("/api/placement/questions")
+def get_placement_questions():
+    """Return placement test questions (without correct answers)."""
+    return [
+        {
+            "id":       q["id"],
+            "question": q["question"],
+            "options":  q["options"],
+            "level":    q["level"],
+        }
+        for q in PLACEMENT_QUESTIONS
+    ]
+
+
+@app.get("/api/placement/status/{user_id}")
+def get_placement_status(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    completed = getattr(user, "placement_completed", False) or False
+    level     = getattr(user, "placement_level", None)
+    return {
+        "placement_completed": completed,
+        "placement_level":     level,
+        "level_info":          LEVEL_INFO.get(level) if level else None,
+    }
+
+
+@app.post("/api/placement/submit", response_model=PlacementResultOut)
+def submit_placement(body: PlacementSubmitRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == body.user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    q_map    = {q["id"]: q for q in PLACEMENT_QUESTIONS}
+    score    = sum(q["points"] for qid, ans in body.answers.items()
+                   if qid in q_map and q_map[qid]["correct"] == ans)
+    level    = _calculate_placement_level(score, _PLACEMENT_MAX)
+    pct      = round((score / _PLACEMENT_MAX) * 100)
+    info     = LEVEL_INFO[level]
+
+    user.placement_level     = level
+    user.placement_completed = True
+    db.commit()
+
+    return PlacementResultOut(
+        level       = level,
+        level_name  = info["name"],
+        score_pct   = pct,
+        description = info["description"],
+    )
+
+
+@app.post("/api/placement/reset/{user_id}")
+def reset_placement(user_id: int, db: Session = Depends(get_db)):
+    """Allow user to retake the placement test."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    user.placement_completed = False
+    user.placement_level     = None
+    db.commit()
+    return {"status": "reset"}
+
+
 @app.post("/api/v1/speech/analyze")
 async def analyze_speech(
     file: UploadFile = File(...),

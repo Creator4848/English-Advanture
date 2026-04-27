@@ -26,9 +26,11 @@ class User(Base):
     level           = Column(Integer, default=1)
     # Legacy field kept for compatibility
     gravity_coins   = Column(Integer, default=0)
-    preferences     = Column(JSON, default={})
-    last_login      = Column(DateTime, server_default=func.now(), onupdate=func.now())
-    created_at      = Column(DateTime, server_default=func.now())
+    preferences          = Column(JSON, default={})
+    last_login           = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at           = Column(DateTime, server_default=func.now())
+    placement_level      = Column(String(10), nullable=True)   # A0, A1, A2, B1, B2, C1, C2
+    placement_completed  = Column(Boolean, default=False)
 
     # Relationships
     video_progress   = relationship("VideoProgress", back_populates="user", cascade="all, delete-orphan")

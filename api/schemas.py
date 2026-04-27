@@ -149,17 +149,32 @@ class SpeakingSessionOut(BaseModel):
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 class DashboardOut(BaseModel):
-    user_id:          int
-    username:         str
-    full_name:        Optional[str]
-    avatar_url:       Optional[str]
-    level:            int
-    xp:               int
-    coins:            int
-    videos_completed: int
-    quizzes_passed:   int
-    speaking_minutes: int
-    badges:           list[dict]
+    user_id:              int
+    username:             str
+    full_name:            Optional[str]
+    avatar_url:           Optional[str]
+    level:                int
+    xp:                   int
+    coins:                int
+    videos_completed:     int
+    quizzes_passed:       int
+    speaking_minutes:     int
+    badges:               list[dict]
+    placement_level:      Optional[str] = None
+    placement_completed:  bool = False
+
+
+# ── Placement Test ────────────────────────────────────────────────────────────
+
+class PlacementSubmitRequest(BaseModel):
+    user_id: int
+    answers: dict[str, str]   # {question_id: selected_option_id}
+
+class PlacementResultOut(BaseModel):
+    level:       str
+    level_name:  str
+    score_pct:   int
+    description: str
 
 class UserOut(BaseModel):
     id:               int
