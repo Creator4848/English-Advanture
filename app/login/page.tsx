@@ -20,7 +20,7 @@ export default function LoginPage() {
 
         // Admin login override
         const cleanPhone = phone.replace(/\s+/g, '');
-        if (cleanPhone === "+998889884848" && password === "Grant2tatu") {
+        if (cleanPhone === "+998991557072" && password === "123123*") {
             setTimeout(() => {
                 if (typeof window !== 'undefined') {
                     sessionStorage.setItem("admin_auth", "true");
