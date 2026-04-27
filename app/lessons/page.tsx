@@ -106,10 +106,10 @@ function LessonsInner() {
             <div className="bg-[#111111] py-14 px-6 lg:px-20">
                 <div className="max-w-7xl mx-auto">
                     <div className="badge mb-5 bg-[#FFB800]/20 text-[#FFB800]">
-                        <BookOpen className="w-3.5 h-3.5" /> Video Darslar
+                        <BookOpen className="w-3.5 h-3.5" /> Video darslar
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black text-white mb-4">
-                        Ingliz Tili <span className="text-[#FFB800]">Darslari</span>
+                        Ingliz tili <span className="text-[#FFB800]">darslari</span>
                     </h1>
                     <p className="text-gray-400 font-medium text-lg max-w-xl">
                         Har bir mavzu bo'yicha video darslarni tomosha qiling va testlarni bajaring.

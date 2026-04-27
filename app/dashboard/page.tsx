@@ -199,19 +199,19 @@ export default function DashboardPage() {
                     {[
                         {
                             icon: <BookOpen className="w-6 h-6 text-[#FFB800]" />,
-                            label: "Ko'rilgan Darslar",
+                            label: "Ko'rilgan darslar",
                             value: d.videos_completed,
                             link: "/lessons",
                         },
                         {
                             icon: <CheckCircle className="w-6 h-6 text-[#FFB800]" />,
-                            label: "O'tilgan Testlar",
+                            label: "O'tilgan testlar",
                             value: d.quizzes_passed,
                             link: "/lessons",
                         },
                         {
                             icon: <Mic className="w-6 h-6 text-[#FFB800]" />,
-                            label: "Speaking Daqiqalar",
+                            label: "Speaking daqiqalar",
                             value: d.speaking_minutes,
                             link: "/speaking-club",
                         },
@@ -238,7 +238,7 @@ export default function DashboardPage() {
                     {/* Badges */}
                     <div className="card p-6 bg-white">
                         <h2 className="font-black text-[#111111] text-xl mb-5 flex items-center gap-2">
-                            <Trophy className="w-5 h-5 text-[#FFB800]" /> Mening Yutuqlarim
+                            <Trophy className="w-5 h-5 text-[#FFB800]" /> Mening yutuqlarim
                         </h2>
                         {d.badges.length ? (
                             <div className="flex flex-wrap gap-3">
@@ -266,7 +266,7 @@ export default function DashboardPage() {
                     {/* Recent activity */}
                     <div className="card p-6 bg-white">
                         <h2 className="font-black text-[#111111] text-xl mb-5 flex items-center gap-2">
-                            <Zap className="w-5 h-5 text-[#FFB800]" /> So'nggi Faollik
+                            <Zap className="w-5 h-5 text-[#FFB800]" /> So'nggi faollik
                         </h2>
                         {activities.length > 0 ? (
                             <div className="space-y-4">
@@ -313,7 +313,7 @@ export default function DashboardPage() {
                         </p>
                     </div>
                     <Link href="/lessons" id="continue-learning-btn" className="btn-yellow flex-shrink-0">
-                        Davom Etish <ArrowRight className="w-4 h-4" />
+                        Davom etish <ArrowRight className="w-4 h-4" />
                     </Link>
                 </motion.div>
 

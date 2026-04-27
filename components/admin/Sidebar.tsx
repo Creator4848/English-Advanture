@@ -28,7 +28,7 @@ const NAV_ITEMS = [
         icon: Users,
     },
     {
-        label: "AI Suhbatdosh",
+        label: "AI suhbatdosh",
         href: "/admin/ai",
         icon: Bot,
     },

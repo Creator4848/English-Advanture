@@ -46,9 +46,9 @@ const LEVEL_INFO: Record<string, { name: string; description: string }> = {
     A0: { name: "Starters",          description: "Siz endi o'rganishni boshlayapsiz!" },
     A1: { name: "Elementary",         description: "Sizda asosiy tushunchalar bor." },
     A2: { name: "Pre-Intermediate",   description: "Siz oddiy mavzularda muloqot qila olasiz." },
-    B1: { name: "Intermediate",       description: "Mustaqil suhbatdosh – Kundalik mavzularda bemalol gaplasha olasiz." },
-    B2: { name: "Upper-Intermediate", description: "Ishonchli muloqot – Murakkab matnlarni tushuna olasiz va ravon muloqot qila olasiz." },
-    C1: { name: "Advanced",           description: "Ilg'or daraja – Tildan akademik va professional maqsadlarda moslashuvchan foydalana olasiz." },
+    B1: { name: "Intermediate",       description: "Mustaqil suhbatdosh – kundalik mavzularda bemalol gaplasha olasiz." },
+    B2: { name: "Upper-Intermediate", description: "Ishonchli muloqot – murakkab matnlarni tushuna olasiz va ravon muloqot qila olasiz." },
+    C1: { name: "Advanced",           description: "Ilg'or daraja – tildan akademik va professional maqsadlarda moslashuvchan foydalana olasiz." },
     C2: { name: "Proficiency",        description: "Mukammal/Ekspert – Deyarli hamma narsani oson tushunasiz. Ona tili darajasida, juda aniq va ravon so'zlaysiz." },
 };
 

@@ -97,7 +97,7 @@ export default function RegisterPage() {
                     <form className="space-y-5" onSubmit={handleRegister}>
                         <div>
                             <label className="block text-sm font-black text-gray-700 mb-2">
-                                Ism va Familiya
+                                Ism va familiya
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

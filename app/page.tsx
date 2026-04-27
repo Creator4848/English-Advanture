@@ -14,12 +14,12 @@ import Header from "@/components/Header";
 const FEATURES = [
   {
     icon: <Play className="w-7 h-7 text-[#FFB800]" />,
-    title: "Video Darslar",
+    title: "Video darslar",
     desc: "YouTube orqali qiziqarli video darslar. Har bir dars bolaning yoshiga mos tarzda tayyorlangan.",
   },
   {
     icon: <Zap className="w-7 h-7 text-[#FFB800]" />,
-    title: "Interaktiv Testlar",
+    title: "Interaktiv testlar",
     desc: "Har dars yakunida drag-drop va rasmli testlar. Bola bilimini o'ynoqi tarzda tekshiring.",
   },
   {
@@ -29,7 +29,7 @@ const FEATURES = [
   },
   {
     icon: <Trophy className="w-7 h-7 text-[#FFB800]" />,
-    title: "Progress & Yutuqlar",
+    title: "Progress & yutuqlar",
     desc: "XP, Level va Badge tizimi. Har bir yutuq bolani rag'batlantiradi.",
   },
 ];
@@ -40,10 +40,10 @@ const TOPICS = [
 ];
 
 const HOW_IT_WORKS = [
-  { step: "1", title: "Videoni Tomosha Qil", desc: "YouTube darsini platforma ichida ko'r." },
-  { step: "2", title: "Testni Bajaring", desc: "Drag-drop va rasmli testlar bilan o'rganilganini mustahkamla." },
-  { step: "3", title: "AI bilan Gaplash", desc: "Alex AI bilan inglizcha suhbatni mashq qil." },
-  { step: "4", title: "Progress Kuzat", desc: "XP yig'ib, level oshir va badge-larni ochar." },
+  { step: "1", title: "Videoni tomosha qil", desc: "YouTube darsini platforma ichida ko'r." },
+  { step: "2", title: "Testni bajaring", desc: "Drag-drop va rasmli testlar bilan o'rganilganini mustahkamla." },
+  { step: "3", title: "AI bilan gaplash", desc: "Alex AI bilan inglizcha suhbatni mashq qil." },
+  { step: "4", title: "Progress kuzat", desc: "XP yig'ib, level oshir va badge-larni ochar." },
 ];
 
 /* ── Page ──────────────────────────────────────────────────────────── */
@@ -73,8 +73,8 @@ export default function Home() {
             </div>
 
             <h1 className="text-5xl md:text-7xl font-black text-[#111111] leading-[1.05] mb-6">
-              Ingliz Tilini<br />
-              <span className="text-[#FFB800]">O'ynab</span> O'rgan
+              Ingliz tilini<br />
+              <span className="text-[#FFB800]">o'ynab</span> o'rgan
             </h1>
 
             <p className="text-lg md:text-xl text-gray-500 font-medium max-w-xl mb-10 mx-auto lg:mx-0">
@@ -84,7 +84,7 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link href="/lessons" id="hero-start-btn" className="btn-yellow text-base">
-                Darslarni Boshlash <ArrowRight className="w-5 h-5" />
+                Darslarni boshlash <ArrowRight className="w-5 h-5" />
               </Link>
               <Link href="/speaking-club" className="btn-outline text-base">
                 AI bilan Gaplash <Mic className="w-5 h-5" />
@@ -94,8 +94,8 @@ export default function Home() {
             {/* Stats row */}
             <div className="flex gap-10 mt-12 justify-center lg:justify-start">
               {[
-                { n: "50+", l: "Video Dars" },
-                { n: "100+", l: "Test Savoli" },
+                { n: "50+", l: "Video dars" },
+                { n: "100+", l: "Test savoli" },
                 { n: "8", l: "Mavzu" },
               ].map((s) => (
                 <div key={s.l}>
@@ -200,7 +200,7 @@ export default function Home() {
       <section className="bg-[#111111] py-24 px-6 lg:px-20">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black text-white text-center mb-3">
-            Qanday Ishlaydi?
+            Qanday ishlaydi?
           </h2>
           <p className="text-center text-gray-400 font-medium mb-14">
             4 oddiy qadamda ingliz tilini o'rganing
@@ -239,13 +239,13 @@ export default function Home() {
         >
           <div className="badge mx-auto mb-5">🚀 Bepul boshlang</div>
           <h2 className="text-4xl md:text-6xl font-black text-[#111111] mb-6">
-            Bugun Boshlang!
+            Bugun boshlang!
           </h2>
           <p className="text-gray-400 text-lg font-medium max-w-lg mx-auto mb-10">
             O'g'lingiz yoki qizingiz uchun eng yaxshi ingliz tili tajribasini yarating.
           </p>
           <Link href="/lessons" id="cta-btn" className="btn-yellow text-lg px-10 py-4">
-            Darslarni Ko'rish <ArrowRight className="w-5 h-5" />
+            Darslarni ko'rish <ArrowRight className="w-5 h-5" />
           </Link>
         </motion.div>
       </section>

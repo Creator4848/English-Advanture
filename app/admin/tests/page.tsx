@@ -20,11 +20,11 @@ export default function AdminTestsPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-black text-white mb-2">Testlar va O'yinlar</h1>
+                    <h1 className="text-3xl font-black text-white mb-2">Testlar va o'yinlar</h1>
                     <p className="text-gray-400 font-medium">Test savollari bankini boshqarish</p>
                 </div>
                 <button className="adm-btn-yellow">
-                    Yangi Savol Qo'shish <Plus className="w-4 h-4 text-[#111111]" />
+                    Yangi savol qo'shish <Plus className="w-4 h-4 text-[#111111]" />
                 </button>
             </div>
 

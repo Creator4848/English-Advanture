@@ -70,7 +70,7 @@ export default function AdminStudentsPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-black text-white mb-2">O'quvchilar Ro'yxati</h1>
+                    <h1 className="text-3xl font-black text-white mb-2">O'quvchilar ro'yxati</h1>
                     <p className="text-gray-400 font-medium">Ro'yxatdan o'tgan o'quvchilar, ularning email va progress ma'lumotlari</p>
                 </div>
                 <div className="flex gap-3">

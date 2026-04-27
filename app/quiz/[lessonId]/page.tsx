@@ -337,8 +337,8 @@ export default function QuizPage() {
                                 {submitting
                                     ? "Natijalar hisoblanmoqda..."
                                     : current < total - 1
-                                        ? "Keyingi Savol →"
-                                        : "Natijalarni Ko'rish 🏆"}
+                                        ? "Keyingi savol →"
+                                        : "Natijalarni ko'rish 🏆"}
                             </motion.button>
                         )}
                     </motion.div>

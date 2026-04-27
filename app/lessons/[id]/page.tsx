@@ -183,7 +183,7 @@ export default function LessonDetailPage() {
                             whileHover={{ scale: 1.02 }}
                         >
                             <div className="text-3xl mb-3">📝</div>
-                            <h3 className="font-black text-[#111111] text-lg mb-1">Testni Boshlash</h3>
+                            <h3 className="font-black text-[#111111] text-lg mb-1">Testni boshlash</h3>
                             <p className="text-sm text-gray-500 font-medium">Bilimingizni tekshiring va XP yig'ing.</p>
                             <div className="mt-3 flex items-center gap-1 text-[#FFB800] text-xs font-black">
                                 <Star className="w-3.5 h-3.5 fill-[#FFB800]" /> +100 XP
@@ -194,7 +194,7 @@ export default function LessonDetailPage() {
                     <Link href="/speaking-club">
                         <motion.div className="card p-6 cursor-pointer" whileHover={{ scale: 1.02 }}>
                             <div className="text-3xl mb-3">🎙️</div>
-                            <h3 className="font-black text-[#111111] text-lg mb-1">AI bilan Gaplash</h3>
+                            <h3 className="font-black text-[#111111] text-lg mb-1">AI bilan gaplash</h3>
                             <p className="text-sm text-gray-500 font-medium">Bu mavzu bo'yicha AI bilan mashq qiling.</p>
                             <div className="mt-3 text-xs font-black text-gray-400">Speaking Club →</div>
                         </motion.div>
@@ -203,7 +203,7 @@ export default function LessonDetailPage() {
                     <Link href="/lessons">
                         <motion.div className="card p-6 cursor-pointer" whileHover={{ scale: 1.02 }}>
                             <div className="text-3xl mb-3">➡️</div>
-                            <h3 className="font-black text-[#111111] text-lg mb-1">Keyingi Dars</h3>
+                            <h3 className="font-black text-[#111111] text-lg mb-1">Keyingi dars</h3>
                             <p className="text-sm text-gray-500 font-medium">Boshqa darslarni ham ko'ring.</p>
                             <div className="mt-3 text-xs font-black text-gray-400">Darslar →</div>
                         </motion.div>
