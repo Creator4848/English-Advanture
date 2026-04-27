@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Header from "@/components/Header";
-import { ArrowRight, CheckCircle, RefreshCw, BarChart2 } from "lucide-react";
+import { ArrowRight, CheckCircle, RefreshCw, BarChart2, AlertCircle } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -42,6 +42,16 @@ const LEVEL_EMOJI: Record<string, string> = {
     A0: "🌱", A1: "📗", A2: "📘", B1: "📙", B2: "📕", C1: "🎓", C2: "🏆",
 };
 
+const LEVEL_INFO: Record<string, { name: string; description: string }> = {
+    A0: { name: "Starters",          description: "Siz endi o'rganishni boshlayapsiz!" },
+    A1: { name: "Elementary",         description: "Sizda asosiy tushunchalar bor." },
+    A2: { name: "Pre-Intermediate",   description: "Siz oddiy mavzularda muloqot qila olasiz." },
+    B1: { name: "Intermediate",       description: "Mustaqil suhbatdosh – Kundalik mavzularda bemalol gaplasha olasiz." },
+    B2: { name: "Upper-Intermediate", description: "Ishonchli muloqot – Murakkab matnlarni tushuna olasiz va ravon muloqot qila olasiz." },
+    C1: { name: "Advanced",           description: "Ilg'or daraja – Tildan akademik va professional maqsadlarda moslashuvchan foydalana olasiz." },
+    C2: { name: "Proficiency",        description: "Mukammal/Ekspert – Deyarli hamma narsani oson tushunasiz. Ona tili darajasida, juda aniq va ravon so'zlaysiz." },
+};
+
 export default function PlacementTestPage() {
     const router = useRouter();
     const [userId, setUserId] = useState<number | null>(null);
@@ -53,14 +63,23 @@ export default function PlacementTestPage() {
     const [existingLevel, setExistingLevel] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     useEffect(() => {
         const token = localStorage.getItem("user_token");
-        if (!token) { router.push("/login"); return; }
+        if (!token) {
+            // Not logged in — redirect to register
+            router.push("/register");
+            return;
+        }
 
         const raw = localStorage.getItem("user_info");
         const info = raw ? JSON.parse(raw) : {};
-        const uid: number = info.user?.id || info.user_id || info.id || 1;
+        const uid: number = info.user?.id || info.user_id || info.id;
+        if (!uid) {
+            router.push("/login");
+            return;
+        }
         setUserId(uid);
 
         (async () => {
@@ -69,15 +88,19 @@ export default function PlacementTestPage() {
                     fetch(`${API}/placement/status/${uid}`),
                     fetch(`${API}/placement/questions`),
                 ]);
-                const status = await statusRes.json();
-                const qs: Question[] = await qRes.json();
-                setQuestions(qs);
-                if (status.placement_completed) {
-                    setAlreadyDone(true);
-                    setExistingLevel(status.placement_level);
+                if (statusRes.ok) {
+                    const status = await statusRes.json();
+                    if (status.placement_completed) {
+                        setAlreadyDone(true);
+                        setExistingLevel(status.placement_level);
+                    }
+                }
+                if (qRes.ok) {
+                    const qs: Question[] = await qRes.json();
+                    setQuestions(qs);
                 }
             } catch {
-                // fallback: continue with empty questions — handled in UI
+                // network error — questions may be empty
             } finally {
                 setLoading(false);
             }
@@ -88,25 +111,32 @@ export default function PlacementTestPage() {
         setAnswers(prev => ({ ...prev, [qId]: optId }));
     };
 
-    const next = () => {
-        if (current < questions.length - 1) setCurrent(c => c + 1);
-    };
-    const prev = () => {
-        if (current > 0) setCurrent(c => c - 1);
-    };
+    const next = () => { if (current < questions.length - 1) setCurrent(c => c + 1); };
+    const prev = () => { if (current > 0) setCurrent(c => c - 1); };
 
     const submit = async () => {
         if (!userId) return;
         setSubmitting(true);
+        setSubmitError(null);
         try {
             const res = await fetch(`${API}/placement/submit`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_id: userId, answers }),
             });
-            if (res.ok) setResult(await res.json());
+            if (res.ok) {
+                const data: PlacementResult = await res.json();
+                setResult(data);
+            } else {
+                let msg = `Server xatosi (${res.status})`;
+                try {
+                    const errJson = await res.json();
+                    msg = errJson.detail || errJson.message || msg;
+                } catch { /* ignore parse error */ }
+                setSubmitError(msg);
+            }
         } catch {
-            // show generic error
+            setSubmitError("Tarmoq xatosi. Internet aloqangizni tekshiring va qayta urinib ko'ring.");
         } finally {
             setSubmitting(false);
         }
@@ -114,14 +144,18 @@ export default function PlacementTestPage() {
 
     const retake = async () => {
         if (!userId) return;
-        await fetch(`${API}/placement/reset/${userId}`, { method: "POST" });
+        try {
+            await fetch(`${API}/placement/reset/${userId}`, { method: "POST" });
+        } catch { /* ignore */ }
         setAlreadyDone(false);
         setExistingLevel(null);
         setResult(null);
         setAnswers({});
         setCurrent(0);
+        setSubmitError(null);
     };
 
+    // ── Loading ────────────────────────────────────────────────────────────
     if (loading) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -136,8 +170,9 @@ export default function PlacementTestPage() {
 
     // ── Already done & no new result ──────────────────────────────────────
     if (alreadyDone && !result) {
-        const colors = existingLevel ? LEVEL_COLORS[existingLevel] : LEVEL_COLORS.A0;
-        const info   = LEVEL_INFO[existingLevel || "A0"];
+        const lv     = existingLevel || "A0";
+        const colors = LEVEL_COLORS[lv] || LEVEL_COLORS.A0;
+        const info   = LEVEL_INFO[lv];
         return (
             <main className="min-h-screen bg-gray-50 flex flex-col">
                 <Header />
@@ -147,13 +182,10 @@ export default function PlacementTestPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        <div className="text-6xl mb-4">{LEVEL_EMOJI[existingLevel || "A0"]}</div>
+                        <div className="text-6xl mb-4">{LEVEL_EMOJI[lv]}</div>
                         <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-black mb-4 ${colors.bg} ${colors.text} border ${colors.border}`}>
-                            {existingLevel}
+                            {lv} – {info?.name}
                         </div>
-                        <h2 className="text-2xl font-black text-[#111111] mb-2">
-                            {info?.name}
-                        </h2>
                         <p className="text-gray-500 text-sm font-medium mb-8 leading-relaxed">
                             {info?.description}
                         </p>
@@ -184,8 +216,7 @@ export default function PlacementTestPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: "spring", stiffness: 200, damping: 20 }}
                     >
-                        {/* Confetti-like emoji */}
-                        <div className="text-7xl mb-4 animate-bounce">{LEVEL_EMOJI[result.level]}</div>
+                        <div className="text-7xl mb-4">{LEVEL_EMOJI[result.level]}</div>
                         <div className="text-[#FFB800] font-black text-sm mb-1">Natija tayyor!</div>
                         <h1 className="text-4xl font-black text-[#111111] mb-2">
                             {result.level} – {result.level_name}
@@ -240,8 +271,27 @@ export default function PlacementTestPage() {
         );
     }
 
+    // ── No questions loaded ────────────────────────────────────────────────
+    if (questions.length === 0) {
+        return (
+            <main className="min-h-screen bg-gray-50 flex flex-col">
+                <Header />
+                <div className="flex-1 flex items-center justify-center px-6">
+                    <div className="card p-10 max-w-md w-full text-center">
+                        <div className="text-5xl mb-4">⚠️</div>
+                        <h2 className="text-xl font-black text-[#111111] mb-2">Savollar yuklanmadi</h2>
+                        <p className="text-gray-500 text-sm mb-6">Server bilan bog'lanishda muammo yuz berdi. Qayta urinib ko'ring.</p>
+                        <button onClick={() => window.location.reload()} className="btn-yellow">
+                            Qayta yuklash
+                        </button>
+                    </div>
+                </div>
+            </main>
+        );
+    }
+
     // ── Test screen ────────────────────────────────────────────────────────
-    const q = questions[current];
+    const q      = questions[current];
     const isLast = current === questions.length - 1;
     const allAnswered = answered === total;
 
@@ -363,24 +413,34 @@ export default function PlacementTestPage() {
                         )}
                     </div>
 
+                    {/* Warnings */}
                     {isLast && !allAnswered && (
                         <p className="text-center text-sm text-red-400 font-medium mt-4">
                             Testni yakunlash uchun barcha {total} ta savolga javob bering. ({total - answered} ta qoldi)
                         </p>
+                    )}
+
+                    {/* Submit error */}
+                    {submitError && (
+                        <motion.div
+                            className="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                        >
+                            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-red-700 font-bold text-sm">{submitError}</p>
+                                <button
+                                    onClick={submit}
+                                    className="text-red-500 underline text-xs font-medium mt-1"
+                                >
+                                    Qayta urinish
+                                </button>
+                            </div>
+                        </motion.div>
                     )}
                 </div>
             </div>
         </main>
     );
 }
-
-// Level info (client-side copy for already-done screen)
-const LEVEL_INFO: Record<string, { name: string; description: string }> = {
-    A0: { name: "Starters",          description: "Siz endi o'rganishni boshlayapsiz!" },
-    A1: { name: "Elementary",         description: "Sizda asosiy tushunchalar bor." },
-    A2: { name: "Pre-Intermediate",   description: "Siz oddiy mavzularda muloqot qila olasiz." },
-    B1: { name: "Intermediate",       description: "Mustaqil suhbatdosh – Kundalik mavzularda bemalol gaplasha olasiz." },
-    B2: { name: "Upper-Intermediate", description: "Ishonchli muloqot – Murakkab matnlarni tushuna olasiz va ravon muloqot qila olasiz." },
-    C1: { name: "Advanced",           description: "Ilg'or daraja – Tildan akademik va professional maqsadlarda moslashuvchan foydalana olasiz." },
-    C2: { name: "Proficiency",        description: "Mukammal/Ekspert – Deyarli hamma narsani oson tushunasiz. Ona tili darajasida, juda aniq va ravon so'zlaysiz." },
-};

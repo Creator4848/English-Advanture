@@ -27,15 +27,13 @@ export default function Header() {
                 <Link href="/lessons" className="hover:text-[#111111] transition-colors">Darslar</Link>
                 <Link href="/speaking-club" className="hover:text-[#111111] transition-colors">Speaking Club</Link>
                 <Link href="/dashboard" className="hover:text-[#111111] transition-colors">Dashboard</Link>
-                {loggedIn && (
-                    <Link
-                        href="/placement-test"
-                        className="flex items-center gap-1.5 hover:text-[#111111] transition-colors text-[#E6A500]"
-                    >
-                        <ClipboardList className="w-4 h-4" />
-                        Darajani aniqlash
-                    </Link>
-                )}
+                <Link
+                    href="/placement-test"
+                    className="flex items-center gap-1.5 hover:text-[#111111] transition-colors text-[#E6A500]"
+                >
+                    <ClipboardList className="w-4 h-4" />
+                    Darajani aniqlash
+                </Link>
                 {loggedIn ? (
                     <button
                         onClick={() => {
