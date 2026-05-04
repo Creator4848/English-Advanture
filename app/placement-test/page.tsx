@@ -10,7 +10,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Option { id: string; text: string; }
-interface Question { id: string; question: string; options: Option[]; level: string; }
+interface Question { id: string; question: string; options: Option[]; level: string; correct?: string; }
 interface PlacementResult { level: string; level_name: string; score_pct: number; description: string; }
 
 // ─── Level config ─────────────────────────────────────────────────────────────
@@ -79,41 +79,30 @@ export default function PlacementTestPage() {
     const pickAnswer = (q: Question, optId: string) => {
         if (feedbackState !== "none") return; // already answered this question
 
-        // Find the correct answer from the question (we need the backend to tell us – workaround: stored in state after submit)
-        // We will reveal correct after submit, using the full final result
         setSelectedOpt(optId);
         const updatedAnswers = { ...answers, [q.id]: optId };
         setAnswers(updatedAnswers);
 
-        // We don't know correct yet client-side, so show selection highlight only.
-        // After full submit we get the breakdown. For real-time per-question feedback,
-        // we auto-advance and collect results from server at the end.
-        // For a true interactive experience, we submit each answer individually.
-        submitSingleAnswer(q, optId, updatedAnswers);
-    };
-
-    const submitSingleAnswer = async (q: Question, optId: string, currentAnswers: Record<string, string>) => {
-        // Submit all answers collected so far to get per-question breakdown
-        // (we use the full submit endpoint and display only the latest question result)
-        setFeedbackState("none"); // show loading briefly
-
-        // Optimistic: check if this is the last question
+        const isCorrect = q.correct === optId;
         const isLast = current === questions.length - 1;
 
-        if (isLast) {
-            // Submit all and get final result
-            await submitAll(currentAnswers);
+        if (isCorrect) {
+            setFeedbackMsg("Ajoyib! Zo'r javob! 🎉");
+            setFeedbackColor("text-emerald-600");
+            setFeedbackState("correct");
         } else {
-            // Show "received" feedback and auto-advance to next question
-            setFeedbackMsg("⏳ Javob qabul qilindi!");
-            setFeedbackColor("text-blue-500");
-            setFeedbackState("correct"); // treat as "answered" state
+            setFeedbackMsg("Xato! Keyingilarini albatta to'g'ri bajarasiz 💪");
+            setFeedbackColor("text-rose-600");
+            setFeedbackState("wrong");
+        }
 
+        if (!isLast) {
+            // Auto advance
             setTimeout(() => {
                 setFeedbackState("none");
                 setSelectedOpt(null);
                 setCurrent(c => c + 1);
-            }, 800);
+            }, 1200);
         }
     };
 
@@ -334,6 +323,7 @@ export default function PlacementTestPage() {
     const qCfg = LEVEL_CONFIG[questionLevel] || LEVEL_CONFIG.beginner;
     const progressPct = Math.round((current / questions.length) * 100);
     const isAnswered = feedbackState !== "none";
+    const isLast = current === questions.length - 1;
 
     // Section label (show when entering a new level block)
     const prevLevel = current > 0 ? questions[current - 1].level : null;
@@ -418,14 +408,18 @@ export default function PlacementTestPage() {
                                     let circleStyle = "bg-gray-100 text-gray-500";
 
                                     if (isSelected && feedbackState === "correct") {
-                                        optStyle = "border-blue-400 bg-blue-50 text-blue-800";
-                                        circleStyle = "bg-blue-400 text-white";
+                                        optStyle = "border-emerald-400 bg-emerald-50 text-emerald-800";
+                                        circleStyle = "bg-emerald-400 text-white";
                                     } else if (isSelected && feedbackState === "wrong") {
-                                        optStyle = "border-blue-400 bg-blue-50 text-blue-800";
-                                        circleStyle = "bg-blue-400 text-white";
+                                        optStyle = "border-rose-400 bg-rose-50 text-rose-800";
+                                        circleStyle = "bg-rose-400 text-white";
                                     } else if (isSelected) {
                                         optStyle = "border-[#FFB800] bg-[#FFF3CC] text-[#111111]";
                                         circleStyle = "bg-[#FFB800] text-white";
+                                    } else if (feedbackState !== "none" && opt.id === q.correct) {
+                                        // highlight correct answer if they got it wrong
+                                        optStyle = "border-emerald-400 border-dashed bg-emerald-50 text-emerald-800 opacity-80";
+                                        circleStyle = "bg-emerald-400 text-white";
                                     }
 
                                     return (
@@ -463,12 +457,31 @@ export default function PlacementTestPage() {
                                     }`}
                             >
                                 <div className="text-3xl">
-                                    {feedbackState === "correct" ? "✅" : "⏳"}
+                                    {feedbackState === "correct" ? "✅" : "❌"}
                                 </div>
                                 <div className="flex-1">
                                     <p className={`font-black text-base ${feedbackColor}`}>{feedbackMsg}</p>
-                                    <p className="text-xs text-gray-400 font-medium mt-0.5">Keyingi savol tez orada...</p>
+                                    {!isLast && <p className="text-xs text-gray-400 font-medium mt-0.5">Keyingi savol tez orada...</p>}
                                 </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Finish Test Button */}
+                    <AnimatePresence>
+                        {isAnswered && isLast && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex justify-center mb-6"
+                            >
+                                <button
+                                    onClick={() => submitAll(answers)}
+                                    disabled={submitting}
+                                    className="btn-yellow px-8 py-3 text-lg w-full max-w-sm"
+                                >
+                                    {submitting ? "Yakunlanmoqda..." : "Testni yakunlash"}
+                                </button>
                             </motion.div>
                         )}
                     </AnimatePresence>

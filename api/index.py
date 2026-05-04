@@ -1092,6 +1092,7 @@ def get_placement_questions():
             "question": q["question"],
             "options":  q["options"],
             "level":    q["level"],
+            "correct":  q["correct"]
         }
         for q in PLACEMENT_QUESTIONS
     ]

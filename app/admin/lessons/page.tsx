@@ -50,6 +50,7 @@ const DEFAULT_FORM = {
     rating: 4.5,
     price: 0,
     description: "",
+    order_index: 10,
 };
 
 export default function AdminLessonsPage() {
@@ -114,6 +115,7 @@ export default function AdminLessonsPage() {
             rating: 4.5,
             price: 0,
             description: l.description || "",
+            order_index: l.order_index || 10,
         });
         setIsModalOpen(true);
     };
@@ -130,6 +132,7 @@ export default function AdminLessonsPage() {
             difficulty: Number(formData.difficulty),
             thumbnail_url: `https://img.youtube.com/vi/${yid}/maxresdefault.jpg`,
             duration_seconds: Math.round(formData.hours * 3600),
+            order_index: Number(formData.order_index),
         };
 
         try {
@@ -386,8 +389,8 @@ export default function AdminLessonsPage() {
                                     </div>
                                 </div>
 
-                                {/* Row 2: Kategoriya + Daraja */}
-                                <div className="grid grid-cols-2 gap-4">
+                                {/* Row 2: Kategoriya + Tartib + Daraja */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
                                             Kategoriya
@@ -397,10 +400,19 @@ export default function AdminLessonsPage() {
                                             value={formData.category}
                                             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                         >
-                                            {CATEGORIES.map(c => (
-                                                <option key={c} value={c}>{c}</option>
-                                            ))}
+                                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
+                                            Tartib raqami
+                                        </label>
+                                        <input
+                                            type="number"
+                                            className="adm-input"
+                                            value={formData.order_index}
+                                            onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) || 0 })}
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
