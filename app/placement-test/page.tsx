@@ -5,81 +5,53 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Header from "@/components/Header";
-import { ArrowRight, CheckCircle, RefreshCw, BarChart2, AlertCircle } from "lucide-react";
-
+import { ArrowRight, RefreshCw, BarChart2, CheckCircle, Star } from "lucide-react";
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
 
-interface Option {
-    id: string;
-    text: string;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Option { id: string; text: string; }
+interface Question { id: string; question: string; options: Option[]; level: string; }
+interface PlacementResult { level: string; level_name: string; score_pct: number; description: string; }
 
-interface Question {
-    id: string;
-    question: string;
-    options: Option[];
-    level: string;
-}
-
-interface PlacementResult {
-    level: string;
-    level_name: string;
-    score_pct: number;
-    description: string;
-}
-
-const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-    A0: { bg: "bg-gray-100",   text: "text-gray-700",   border: "border-gray-300" },
-    A1: { bg: "bg-green-100",  text: "text-green-700",  border: "border-green-400" },
-    A2: { bg: "bg-teal-100",   text: "text-teal-700",   border: "border-teal-400" },
-    B1: { bg: "bg-blue-100",   text: "text-blue-700",   border: "border-blue-400" },
-    B2: { bg: "bg-indigo-100", text: "text-indigo-700", border: "border-indigo-400" },
-    C1: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-400" },
-    C2: { bg: "bg-yellow-100", text: "text-[#E6A500]",  border: "border-[#FFB800]" },
+// ─── Level config ─────────────────────────────────────────────────────────────
+const LEVEL_CONFIG: Record<string, { bg: string; border: string; text: string; emoji: string; name: string; gradient: string }> = {
+    beginner: { bg: "bg-emerald-50", border: "border-emerald-400", text: "text-emerald-700", emoji: "🌱", name: "Boshlang'ich", gradient: "from-emerald-400 to-teal-500" },
+    intermediate: { bg: "bg-blue-50", border: "border-blue-400", text: "text-blue-700", emoji: "📘", name: "O'rta", gradient: "from-blue-400 to-indigo-500" },
+    advanced: { bg: "bg-amber-50", border: "border-amber-400", text: "text-amber-700", emoji: "🏆", name: "Yuqori", gradient: "from-amber-400 to-orange-500" },
 };
 
-const LEVEL_EMOJI: Record<string, string> = {
-    A0: "🌱", A1: "📗", A2: "📘", B1: "📙", B2: "📕", C1: "🎓", C2: "🏆",
+const LEVEL_SECTION_LABELS: Record<string, string> = {
+    beginner: "Boshlang'ich daraja savollari (1-5)",
+    intermediate: "O'rta daraja savollari (6-10)",
+    advanced: "Yuqori daraja savollari (11-15)",
 };
 
-const LEVEL_INFO: Record<string, { name: string; description: string }> = {
-    A0: { name: "Starters",          description: "Siz endi o'rganishni boshlayapsiz!" },
-    A1: { name: "Elementary",         description: "Sizda asosiy tushunchalar bor." },
-    A2: { name: "Pre-Intermediate",   description: "Siz oddiy mavzularda muloqot qila olasiz." },
-    B1: { name: "Intermediate",       description: "Mustaqil suhbatdosh – kundalik mavzularda bemalol gaplasha olasiz." },
-    B2: { name: "Upper-Intermediate", description: "Ishonchli muloqot – murakkab matnlarni tushuna olasiz va ravon muloqot qila olasiz." },
-    C1: { name: "Advanced",           description: "Ilg'or daraja – tildan akademik va professional maqsadlarda moslashuvchan foydalana olasiz." },
-    C2: { name: "Proficiency",        description: "Mukammal/Ekspert – Deyarli hamma narsani oson tushunasiz. Ona tili darajasida, juda aniq va ravon so'zlaysiz." },
-};
 
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function PlacementTestPage() {
     const router = useRouter();
     const [userId, setUserId] = useState<number | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
-    const [answers, setAnswers] = useState<Record<string, string>>({});
     const [current, setCurrent] = useState(0);
+    const [selectedOpt, setSelectedOpt] = useState<string | null>(null);
+    const [feedbackState, setFeedbackState] = useState<"none" | "correct" | "wrong">("none");
+    const [feedbackMsg, setFeedbackMsg] = useState("");
+    const [feedbackColor, setFeedbackColor] = useState("");
+    const [answers, setAnswers] = useState<Record<string, string>>({});
     const [result, setResult] = useState<PlacementResult | null>(null);
     const [alreadyDone, setAlreadyDone] = useState(false);
     const [existingLevel, setExistingLevel] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [submitError, setSubmitError] = useState<string | null>(null);
 
+    // ── Auth + initial load ────────────────────────────────────────────────
     useEffect(() => {
         const token = localStorage.getItem("user_token");
-        if (!token) {
-            // Not logged in — redirect to register
-            router.push("/register");
-            return;
-        }
-
+        if (!token) { router.push("/register"); return; }
         const raw = localStorage.getItem("user_info");
         const info = raw ? JSON.parse(raw) : {};
         const uid: number = info.user?.id || info.user_id || info.id;
-        if (!uid) {
-            router.push("/login");
-            return;
-        }
+        if (!uid) { router.push("/login"); return; }
         setUserId(uid);
 
         (async () => {
@@ -99,100 +71,104 @@ export default function PlacementTestPage() {
                     const qs: Question[] = await qRes.json();
                     setQuestions(qs);
                 }
-            } catch {
-                // network error — questions may be empty
-            } finally {
-                setLoading(false);
-            }
+            } catch { /* silent */ } finally { setLoading(false); }
         })();
     }, [router]);
 
-    const select = (qId: string, optId: string) => {
-        setAnswers(prev => ({ ...prev, [qId]: optId }));
+    // ── Pick answer ────────────────────────────────────────────────────────
+    const pickAnswer = (q: Question, optId: string) => {
+        if (feedbackState !== "none") return; // already answered this question
+
+        // Find the correct answer from the question (we need the backend to tell us – workaround: stored in state after submit)
+        // We will reveal correct after submit, using the full final result
+        setSelectedOpt(optId);
+        const updatedAnswers = { ...answers, [q.id]: optId };
+        setAnswers(updatedAnswers);
+
+        // We don't know correct yet client-side, so show selection highlight only.
+        // After full submit we get the breakdown. For real-time per-question feedback,
+        // we auto-advance and collect results from server at the end.
+        // For a true interactive experience, we submit each answer individually.
+        submitSingleAnswer(q, optId, updatedAnswers);
     };
 
-    const next = () => { if (current < questions.length - 1) setCurrent(c => c + 1); };
-    const prev = () => { if (current > 0) setCurrent(c => c - 1); };
+    const submitSingleAnswer = async (q: Question, optId: string, currentAnswers: Record<string, string>) => {
+        // Submit all answers collected so far to get per-question breakdown
+        // (we use the full submit endpoint and display only the latest question result)
+        setFeedbackState("none"); // show loading briefly
 
-    const submit = async () => {
+        // Optimistic: check if this is the last question
+        const isLast = current === questions.length - 1;
+
+        if (isLast) {
+            // Submit all and get final result
+            await submitAll(currentAnswers);
+        } else {
+            // Show "received" feedback and auto-advance to next question
+            setFeedbackMsg("⏳ Javob qabul qilindi!");
+            setFeedbackColor("text-blue-500");
+            setFeedbackState("correct"); // treat as "answered" state
+
+            setTimeout(() => {
+                setFeedbackState("none");
+                setSelectedOpt(null);
+                setCurrent(c => c + 1);
+            }, 800);
+        }
+    };
+
+    const submitAll = async (finalAnswers: Record<string, string>) => {
         if (!userId) return;
         setSubmitting(true);
-        setSubmitError(null);
         try {
             const res = await fetch(`${API}/placement/submit`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: userId, answers }),
+                body: JSON.stringify({ user_id: userId, answers: finalAnswers }),
             });
             if (res.ok) {
                 const data: PlacementResult = await res.json();
                 setResult(data);
-            } else {
-                let msg = `Server xatosi (${res.status})`;
-                try {
-                    const errJson = await res.json();
-                    msg = errJson.detail || errJson.message || msg;
-                } catch { /* ignore parse error */ }
-                setSubmitError(msg);
             }
-        } catch {
-            setSubmitError("Tarmoq xatosi. Internet aloqangizni tekshiring va qayta urinib ko'ring.");
-        } finally {
-            setSubmitting(false);
-        }
+        } catch { /* silent */ } finally { setSubmitting(false); }
     };
 
     const retake = async () => {
         if (!userId) return;
-        try {
-            await fetch(`${API}/placement/reset/${userId}`, { method: "POST" });
-        } catch { /* ignore */ }
-        setAlreadyDone(false);
-        setExistingLevel(null);
-        setResult(null);
-        setAnswers({});
-        setCurrent(0);
-        setSubmitError(null);
+        try { await fetch(`${API}/placement/reset/${userId}`, { method: "POST" }); } catch { /* ignore */ }
+        setAlreadyDone(false); setExistingLevel(null); setResult(null);
+        setAnswers({}); setCurrent(0); setSelectedOpt(null); setFeedbackState("none");
     };
 
-    // ── Loading ────────────────────────────────────────────────────────────
+    // ─── Loading ───────────────────────────────────────────────────────────
     if (loading) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
-                <div className="text-5xl animate-bounce">📝</div>
+                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.2 }}>
+                    <div className="text-6xl">📝</div>
+                </motion.div>
             </div>
         );
     }
 
-    const answered = Object.keys(answers).length;
-    const total    = questions.length;
-    const progress = total > 0 ? Math.round((answered / total) * 100) : 0;
-
-    // ── Already done & no new result ──────────────────────────────────────
+    // ─── Already done + no new result ─────────────────────────────────────
     if (alreadyDone && !result) {
-        const lv     = existingLevel || "A0";
-        const colors = LEVEL_COLORS[lv] || LEVEL_COLORS.A0;
-        const info   = LEVEL_INFO[lv];
+        const lv = existingLevel || "beginner";
+        const cfg = LEVEL_CONFIG[lv] || LEVEL_CONFIG.beginner;
         return (
             <main className="min-h-screen bg-gray-50 flex flex-col">
                 <Header />
                 <div className="flex-1 flex items-center justify-center px-6 py-16">
-                    <motion.div
-                        className="card p-10 max-w-md w-full text-center"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                    >
-                        <div className="text-6xl mb-4">{LEVEL_EMOJI[lv]}</div>
-                        <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-black mb-4 ${colors.bg} ${colors.text} border ${colors.border}`}>
-                            {lv} – {info?.name}
+                    <motion.div className="card p-10 max-w-md w-full text-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                        <div className="text-7xl mb-5">{cfg.emoji}</div>
+                        <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-black mb-4 ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
+                            {cfg.name} darajasi
                         </div>
-                        <p className="text-gray-500 text-sm font-medium mb-8 leading-relaxed">
-                            {info?.description}
+                        <p className="text-gray-500 font-medium text-sm mb-8 leading-relaxed">
+                            Siz allaqachon daraja testini topshirgansiz. Darslar sizning darajangizga qarab ko'rsatiladi.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                            <Link href="/dashboard" className="btn-yellow">
-                                Dashboard <ArrowRight className="w-4 h-4" />
-                            </Link>
+                            <Link href="/lessons" className="btn-yellow">Darslarni ko'rish <ArrowRight className="w-4 h-4" /></Link>
                             <button onClick={retake} className="btn-outline flex items-center gap-2 justify-center">
                                 <RefreshCw className="w-4 h-4" /> Qayta topshirish
                             </button>
@@ -203,75 +179,127 @@ export default function PlacementTestPage() {
         );
     }
 
-    // ── Result screen ──────────────────────────────────────────────────────
+    // ─── Final result screen ───────────────────────────────────────────────
     if (result) {
-        const colors = LEVEL_COLORS[result.level] || LEVEL_COLORS.A0;
+        const cfg = LEVEL_CONFIG[result.level] || LEVEL_CONFIG.beginner;
+        const total = questions.length;
+        const correct = Math.round((result.score_pct / 100) * total);
+        const wrong = total - correct;
+
         return (
             <main className="min-h-screen bg-gray-50 flex flex-col">
                 <Header />
-                <div className="flex-1 flex items-center justify-center px-6 py-16">
-                    <motion.div
-                        className="card p-10 max-w-lg w-full text-center"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                    >
-                        <div className="text-7xl mb-4">{LEVEL_EMOJI[result.level]}</div>
-                        <div className="text-[#FFB800] font-black text-sm mb-1">Natija tayyor!</div>
-                        <h1 className="text-4xl font-black text-[#111111] mb-2">
-                            {result.level} – {result.level_name}
-                        </h1>
-                        <p className="text-gray-500 font-medium text-sm mb-6 leading-relaxed max-w-sm mx-auto">
-                            {result.description}
-                        </p>
+                <div className="flex-1 flex items-center justify-center px-6 py-12">
+                    <div className="w-full max-w-2xl">
+                        {/* Level result hero */}
+                        <motion.div
+                            className="card p-8 mb-6 text-center"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                        >
+                            <div className="text-7xl mb-4">{cfg.emoji}</div>
+                            <div className="text-[#FFB800] font-black text-sm mb-2">🎊 Natija tayyor!</div>
+                            <h1 className="text-4xl font-black text-[#111111] mb-2">{cfg.name} Daraja</h1>
+                            <p className="text-gray-500 font-medium text-sm mb-6 max-w-sm mx-auto leading-relaxed">{result.description}</p>
 
-                        {/* Score bar */}
-                        <div className="mb-6">
-                            <div className="flex justify-between text-xs font-bold text-gray-500 mb-1">
-                                <span>Ball</span>
-                                <span>{result.score_pct}%</span>
-                            </div>
-                            <div className="progress-track">
-                                <motion.div
-                                    className="progress-fill"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${result.score_pct}%` }}
-                                    transition={{ duration: 1, delay: 0.3 }}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Level scale */}
-                        <div className="flex justify-between gap-1 mb-8">
-                            {Object.entries(LEVEL_COLORS).map(([lvl, c]) => (
-                                <div
-                                    key={lvl}
-                                    className={`flex-1 rounded-full py-1 text-xs font-black text-center transition-all ${
-                                        lvl === result.level
-                                            ? `${c.bg} ${c.text} border ${c.border} scale-110`
-                                            : "bg-gray-100 text-gray-400"
-                                    }`}
-                                >
-                                    {lvl}
+                            {/* Score bar */}
+                            <div className="mb-6">
+                                <div className="flex justify-between text-xs font-bold text-gray-400 mb-2">
+                                    <span>Umumiy ball</span><span>{result.score_pct}%</span>
                                 </div>
-                            ))}
-                        </div>
+                                <div className="progress-track">
+                                    <motion.div
+                                        className="progress-fill"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${result.score_pct}%` }}
+                                        transition={{ duration: 1.2, delay: 0.3 }}
+                                    />
+                                </div>
+                            </div>
 
-                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                            <Link href="/lessons" className="btn-yellow">
-                                Darslarni boshlash <ArrowRight className="w-4 h-4" />
-                            </Link>
-                            <Link href="/dashboard" className="btn-outline flex items-center gap-2 justify-center">
-                                <BarChart2 className="w-4 h-4" /> Dashboard
-                            </Link>
-                        </div>
-                    </motion.div>
+                            {/* Stats */}
+                            <div className="grid grid-cols-3 gap-4 mb-6">
+                                <div className="bg-emerald-50 rounded-xl py-3 px-2">
+                                    <div className="text-2xl font-black text-emerald-600">{correct}</div>
+                                    <div className="text-xs font-bold text-emerald-500">To'g'ri ✅</div>
+                                </div>
+                                <div className="bg-rose-50 rounded-xl py-3 px-2">
+                                    <div className="text-2xl font-black text-rose-500">{wrong}</div>
+                                    <div className="text-xs font-bold text-rose-400">Xato ❌</div>
+                                </div>
+                                <div className="bg-gray-50 rounded-xl py-3 px-2">
+                                    <div className="text-2xl font-black text-gray-700">{total}</div>
+                                    <div className="text-xs font-bold text-gray-400">Jami 📝</div>
+                                </div>
+                            </div>
+
+                            {/* Level scale */}
+                            <div className="flex justify-center gap-2 mb-6">
+                                {Object.entries(LEVEL_CONFIG).map(([lvl, c]) => (
+                                    <div key={lvl}
+                                        className={`flex-1 rounded-xl py-2 text-xs font-black text-center transition-all ${lvl === result.level
+                                            ? `bg-gradient-to-br ${c.gradient} text-white scale-110 shadow-lg`
+                                            : `${c.bg} ${c.text} opacity-50`
+                                            }`}>
+                                        {c.emoji}<div className="text-[10px] mt-0.5">{c.name}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                <Link href="/lessons" className="btn-yellow">Darslarni boshlash <ArrowRight className="w-4 h-4" /></Link>
+                                <Link href="/dashboard" className="btn-outline flex items-center gap-2 justify-center">
+                                    <BarChart2 className="w-4 h-4" /> Dashboard
+                                </Link>
+                            </div>
+                        </motion.div>
+
+                        {/* Question breakdown summary */}
+                        <motion.div className="card p-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                            <h3 className="font-black text-[#111111] text-lg mb-4 flex items-center gap-2">
+                                <Star className="w-5 h-5 text-[#FFB800]" /> Batafsil natijalar
+                            </h3>
+                            <div className="space-y-2">
+                                {questions.map((q, i) => {
+                                    const userAns = answers[q.id];
+                                    const qLevel = q.level;
+                                    const qCfg = LEVEL_CONFIG[qLevel] || LEVEL_CONFIG.beginner;
+                                    const answered = !!userAns;
+                                    return (
+                                        <div key={q.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${answered ? "bg-blue-100 text-blue-600" : "bg-gray-200 text-gray-400"}`}>
+                                                {i + 1}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm font-bold text-gray-700 truncate">{q.question}</div>
+                                                <div className={`text-xs font-bold ${qCfg.text}`}>{qCfg.emoji} {qCfg.name}</div>
+                                            </div>
+                                            {answered ? (
+                                                <div className="flex items-center gap-1 text-xs font-bold text-blue-500">
+                                                    <CheckCircle className="w-4 h-4" /> Javob berildi
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs font-bold text-gray-400">Javob yo'q</div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                                <button onClick={retake} className="btn-outline text-sm flex items-center gap-2">
+                                    <RefreshCw className="w-4 h-4" /> Qayta topshirish
+                                </button>
+                                <div className="text-sm font-black text-gray-500">Jami: {Object.keys(answers).length}/{questions.length}</div>
+                            </div>
+                        </motion.div>
+                    </div>
                 </div>
             </main>
         );
     }
 
-    // ── No questions loaded ────────────────────────────────────────────────
+    // ─── No questions ──────────────────────────────────────────────────────
     if (questions.length === 0) {
         return (
             <main className="min-h-screen bg-gray-50 flex flex-col">
@@ -280,34 +308,68 @@ export default function PlacementTestPage() {
                     <div className="card p-10 max-w-md w-full text-center">
                         <div className="text-5xl mb-4">⚠️</div>
                         <h2 className="text-xl font-black text-[#111111] mb-2">Savollar yuklanmadi</h2>
-                        <p className="text-gray-500 text-sm mb-6">Server bilan bog'lanishda muammo yuz berdi. Qayta urinib ko'ring.</p>
-                        <button onClick={() => window.location.reload()} className="btn-yellow">
-                            Qayta yuklash
-                        </button>
+                        <p className="text-gray-500 text-sm mb-6">Server bilan bog'lanishda muammo yuz berdi.</p>
+                        <button onClick={() => window.location.reload()} className="btn-yellow">Qayta yuklash</button>
                     </div>
                 </div>
             </main>
         );
     }
 
-    // ── Test screen ────────────────────────────────────────────────────────
-    const q      = questions[current];
-    const isLast = current === questions.length - 1;
-    const allAnswered = answered === total;
+    // ─── Submitting screen ─────────────────────────────────────────────────
+    if (submitting) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                    <div className="text-5xl">⏳</div>
+                </motion.div>
+                <p className="font-black text-gray-500">Natijalar hisoblanmoqda...</p>
+            </div>
+        );
+    }
+
+    // ─── Test screen ───────────────────────────────────────────────────────
+    const q = questions[current];
+    const questionLevel = q?.level || "beginner";
+    const qCfg = LEVEL_CONFIG[questionLevel] || LEVEL_CONFIG.beginner;
+    const progressPct = Math.round((current / questions.length) * 100);
+    const isAnswered = feedbackState !== "none";
+
+    // Section label (show when entering a new level block)
+    const prevLevel = current > 0 ? questions[current - 1].level : null;
+    const showSectionLabel = current === 0 || (prevLevel && prevLevel !== questionLevel);
+    const sectionLabel = LEVEL_SECTION_LABELS[questionLevel];
 
     return (
         <main className="min-h-screen bg-gray-50 flex flex-col">
             <Header />
 
-            {/* Top progress */}
-            <div className="bg-white border-b border-gray-100 px-6 lg:px-20 py-4">
+            {/* Top progress bar */}
+            <div className="bg-white border-b border-gray-100 px-6 py-4">
                 <div className="max-w-2xl mx-auto">
                     <div className="flex items-center justify-between text-sm font-bold text-gray-500 mb-2">
-                        <span>Savol {current + 1} / {total}</span>
-                        <span>{answered} ta javob berildi</span>
+                        <span>Savol <span className="text-[#111111]">{current + 1}</span> / {questions.length}</span>
+                        <span className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black ${qCfg.bg} ${qCfg.text} border ${qCfg.border}`}>
+                            {qCfg.emoji} {qCfg.name}
+                        </span>
                     </div>
                     <div className="progress-track">
-                        <div className="progress-fill" style={{ width: `${progress}%` }} />
+                        <motion.div
+                            className="progress-fill"
+                            animate={{ width: `${progressPct}%` }}
+                            transition={{ duration: 0.4 }}
+                        />
+                    </div>
+                    {/* Dot indicators */}
+                    <div className="flex items-center gap-1 mt-2 flex-wrap">
+                        {questions.map((qi, i) => (
+                            <div key={qi.id}
+                                className={`h-1.5 rounded-full transition-all ${i < current ? "bg-[#FFB800] flex-1" :
+                                    i === current ? "bg-[#FFB800] flex-[2]" :
+                                        "bg-gray-200 flex-1"
+                                    }`}
+                            />
+                        ))}
                     </div>
                 </div>
             </div>
@@ -315,50 +377,68 @@ export default function PlacementTestPage() {
             <div className="flex-1 flex items-start justify-center px-6 py-10">
                 <div className="w-full max-w-2xl">
 
+                    {/* Section label banner */}
+                    <AnimatePresence>
+                        {showSectionLabel && (
+                            <motion.div
+                                key={questionLevel}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl mb-4 text-sm font-black ${qCfg.bg} ${qCfg.text} border ${qCfg.border}`}
+                            >
+                                <span className="text-lg">{qCfg.emoji}</span>
+                                {sectionLabel}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Question card */}
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={q?.id}
-                            initial={{ opacity: 0, x: 40 }}
+                            initial={{ opacity: 0, x: 50 }}
                             animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -40 }}
-                            transition={{ duration: 0.25 }}
-                            className="card p-8 mb-6"
+                            exit={{ opacity: 0, x: -50 }}
+                            transition={{ duration: 0.3 }}
+                            className="card p-8 mb-4"
                         >
-                            {/* Level badge */}
-                            <div className="flex items-center gap-2 mb-5">
-                                <span className={`badge ${LEVEL_COLORS[q?.level]?.bg || "bg-gray-100"} ${LEVEL_COLORS[q?.level]?.text || "text-gray-600"}`}>
-                                    {q?.level}
-                                </span>
-                                {answers[q?.id] && (
-                                    <span className="text-green-500 flex items-center gap-1 text-xs font-bold">
-                                        <CheckCircle className="w-3.5 h-3.5" /> Javob berildi
-                                    </span>
-                                )}
-                            </div>
-
                             <h2 className="text-xl font-black text-[#111111] mb-6 leading-snug">
                                 {q?.question}
                             </h2>
 
+                            {/* Options */}
                             <div className="grid grid-cols-1 gap-3">
-                                {q?.options.map(opt => {
-                                    const selected = answers[q.id] === opt.id;
+                                {q?.options.map((opt, idx) => {
+                                    const isSelected = selectedOpt === opt.id;
+                                    const optLabel = ["A", "B", "C", "D"][idx];
+                                    const isDisabled = isAnswered;
+
+                                    let optStyle = "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50";
+                                    let circleStyle = "bg-gray-100 text-gray-500";
+
+                                    if (isSelected && feedbackState === "correct") {
+                                        optStyle = "border-blue-400 bg-blue-50 text-blue-800";
+                                        circleStyle = "bg-blue-400 text-white";
+                                    } else if (isSelected && feedbackState === "wrong") {
+                                        optStyle = "border-blue-400 bg-blue-50 text-blue-800";
+                                        circleStyle = "bg-blue-400 text-white";
+                                    } else if (isSelected) {
+                                        optStyle = "border-[#FFB800] bg-[#FFF3CC] text-[#111111]";
+                                        circleStyle = "bg-[#FFB800] text-white";
+                                    }
+
                                     return (
                                         <motion.button
                                             key={opt.id}
-                                            onClick={() => select(q.id, opt.id)}
-                                            whileHover={{ scale: 1.01 }}
-                                            whileTap={{ scale: 0.99 }}
-                                            className={`w-full text-left px-5 py-4 rounded-xl border-2 font-bold text-sm transition-all ${
-                                                selected
-                                                    ? "border-[#FFB800] bg-[#FFF3CC] text-[#111111]"
-                                                    : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
-                                            }`}
+                                            onClick={() => pickAnswer(q, opt.id)}
+                                            disabled={isDisabled}
+                                            whileHover={isDisabled ? {} : { scale: 1.01 }}
+                                            whileTap={isDisabled ? {} : { scale: 0.99 }}
+                                            className={`w-full text-left px-5 py-4 rounded-xl border-2 font-bold text-sm transition-all disabled:cursor-default ${optStyle}`}
                                         >
-                                            <span className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-xs font-black mr-3 ${
-                                                selected ? "bg-[#FFB800] text-white" : "bg-gray-100 text-gray-500"
-                                            }`}>
-                                                {opt.id.toUpperCase()}
+                                            <span className={`inline-flex w-7 h-7 rounded-full items-center justify-center text-xs font-black mr-3 ${circleStyle}`}>
+                                                {optLabel}
                                             </span>
                                             {opt.text}
                                         </motion.button>
@@ -368,77 +448,47 @@ export default function PlacementTestPage() {
                         </motion.div>
                     </AnimatePresence>
 
-                    {/* Navigation */}
-                    <div className="flex items-center justify-between gap-4">
-                        <button
-                            onClick={prev}
-                            disabled={current === 0}
-                            className="btn-outline px-6 py-3 disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                            ← Oldingi
-                        </button>
-
-                        {/* Quick nav dots */}
-                        <div className="hidden sm:flex items-center gap-1.5 flex-wrap justify-center max-w-xs">
-                            {questions.map((qItem, i) => (
-                                <button
-                                    key={qItem.id}
-                                    onClick={() => setCurrent(i)}
-                                    className={`w-6 h-6 rounded-full text-xs font-bold transition-all ${
-                                        i === current
-                                            ? "bg-[#FFB800] text-white scale-110"
-                                            : answers[qItem.id]
-                                                ? "bg-green-400 text-white"
-                                                : "bg-gray-200 text-gray-500"
+                    {/* Feedback overlay banner */}
+                    <AnimatePresence>
+                        {feedbackState !== "none" && (
+                            <motion.div
+                                key="feedback"
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                transition={{ duration: 0.25 }}
+                                className={`rounded-2xl p-5 border-2 flex items-center gap-4 mb-4 shadow-lg ${feedbackState === "correct"
+                                    ? "bg-blue-50 border-blue-300"
+                                    : "bg-rose-50 border-rose-300"
                                     }`}
-                                >
-                                    {i + 1}
-                                </button>
-                            ))}
-                        </div>
-
-                        {isLast ? (
-                            <button
-                                onClick={submit}
-                                disabled={!allAnswered || submitting}
-                                className="btn-yellow disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                             >
-                                {submitting ? "Tekshirilmoqda..." : "Natijani ko'rish"}
-                                {!submitting && <ArrowRight className="w-4 h-4" />}
-                            </button>
-                        ) : (
-                            <button onClick={next} className="btn-yellow">
-                                Keyingi <ArrowRight className="w-4 h-4" />
-                            </button>
+                                <div className="text-3xl">
+                                    {feedbackState === "correct" ? "✅" : "⏳"}
+                                </div>
+                                <div className="flex-1">
+                                    <p className={`font-black text-base ${feedbackColor}`}>{feedbackMsg}</p>
+                                    <p className="text-xs text-gray-400 font-medium mt-0.5">Keyingi savol tez orada...</p>
+                                </div>
+                            </motion.div>
                         )}
-                    </div>
+                    </AnimatePresence>
 
-                    {/* Warnings */}
-                    {isLast && !allAnswered && (
-                        <p className="text-center text-sm text-red-400 font-medium mt-4">
-                            Testni yakunlash uchun barcha {total} ta savolga javob bering. ({total - answered} ta qoldi)
-                        </p>
-                    )}
-
-                    {/* Submit error */}
-                    {submitError && (
-                        <motion.div
-                            className="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4"
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                        >
-                            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-red-700 font-bold text-sm">{submitError}</p>
-                                <button
-                                    onClick={submit}
-                                    className="text-red-500 underline text-xs font-medium mt-1"
-                                >
-                                    Qayta urinish
-                                </button>
+                    {/* Question counter chips */}
+                    <div className="flex items-center justify-center gap-1 flex-wrap">
+                        {questions.map((qi, i) => (
+                            <div
+                                key={qi.id}
+                                className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center transition-all ${i === current
+                                    ? "bg-[#FFB800] text-white scale-125 shadow"
+                                    : answers[qi.id]
+                                        ? "bg-emerald-400 text-white"
+                                        : "bg-gray-200 text-gray-500"
+                                    }`}
+                            >
+                                {answers[qi.id] ? "✓" : i + 1}
                             </div>
-                        </motion.div>
-                    )}
+                        ))}
+                    </div>
                 </div>
             </div>
         </main>

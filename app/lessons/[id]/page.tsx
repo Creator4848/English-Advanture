@@ -101,7 +101,7 @@ export default function LessonDetailPage() {
     }
 
     const DIFF_LABELS: Record<number, string> = {
-        1: "A0", 2: "A1", 3: "A2", 4: "B1", 5: "B2", 6: "C1", 7: "C2",
+        1: "🌱 Boshlang'ich", 2: "📘 O'rta", 3: "🏆 Yuqori",
     };
 
     return (
