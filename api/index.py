@@ -144,10 +144,6 @@ async def startup_event():
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS placement_level VARCHAR(20)"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS placement_completed BOOLEAN DEFAULT FALSE"))
-            # Migrate old 7-level difficulty values → new 3-level (1=Boshlang'ich, 2=O'rta, 3=Yuqori)
-            conn.execute(text("UPDATE videos SET difficulty = 3 WHERE difficulty > 4"))
-            conn.execute(text("UPDATE videos SET difficulty = 2 WHERE difficulty IN (3,4)"))
-            conn.execute(text("UPDATE videos SET difficulty = 1 WHERE difficulty IN (1,2)"))
             conn.commit()
             print("✅ Migrations applied (IF NOT EXISTS)")
         
@@ -155,15 +151,6 @@ async def startup_event():
         print("✅ Database tables created/verified")
     except Exception as e:
         print(f"⚠️  DB startup error: {e}")
-        traceback.print_exc()
-
-    try:
-        from database import SessionLocal
-        with SessionLocal() as db:
-            seed_demo_data(db)
-            print("✅ Demo data seeded")
-    except Exception as e:
-        print(f"⚠️  DB seeding error: {e}")
         traceback.print_exc()
 
 # ── Service singletons (Lazy loading for health check stability) ──────────────
