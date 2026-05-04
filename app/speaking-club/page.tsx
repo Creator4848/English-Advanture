@@ -21,6 +21,17 @@ const TOPICS = [
     { id: "free", label: "Free Talk 💬", desc: "Talk about anything!" },
 ];
 
+const FLOATING_EMOJIS: Record<string, string[]> = {
+    animals: ["🐾", "🐶", "🐱", "🦁", "🐰", "🦧", "🐘", "🦒", "🦋", "🐬"],
+    colors: ["🎨", "🔴", "🔵", "🟡", "🟢", "🟣", "🌈", "🟠", "🩷", "⚪"],
+    family: ["👨‍👩‍👧", "👨‍👦", "👩‍👧", "👴", "👵", "👶", "👨‍👩‍👧‍👦", "🏠", "👩‍👦‍👦", "🎈"],
+    food: ["🍎", "🍔", "🍕", "🥪", "🍦", "🍇", "🌮", "🍓", "🍟", "🍩"],
+    numbers: ["1️⃣", "2️⃣", "5️⃣", "🔟", "0️⃣", "🔢", "8️⃣", "4️⃣", "7️⃣", "💯"],
+    weather: ["☀️", "🌧️", "🌈", "❄️", "⛈️", "☁️", "⛄", "🌩️", "🌤️", "☔"],
+    school: ["🏫", "📚", "🎒", "✏️", "📏", "🚌", "🖍️", "📝", "📓", "👩‍🏫"],
+    free: ["✨", "💡", "🚀", "💬", "💭", "🎯", "⭐", "🎉", "🔥", "🪐"],
+};
+
 type Message = {
     role: "user" | "assistant";
     content: string;
@@ -52,12 +63,12 @@ function Bubble({ msg }: { msg: Message }) {
                     🤖
                 </div>
             )}
-            <div className={`max-w-xs md:max-w-md rounded-2xl px-4 py-3 ${isAI ? "bg-gray-100 text-[#111111] rounded-tl-sm" : "bg-[#111111] text-white rounded-tr-sm"
+            <div className={`max-w-sm md:max-w-xl rounded-2xl px-5 py-4 shadow-sm ${isAI ? "bg-white text-[#111111] border border-gray-100 rounded-tl-sm" : "bg-[#111111] text-white rounded-tr-sm"
                 }`}>
                 {msg.transcript && (
-                    <p className="text-xs text-gray-400 font-medium mb-1 italic">🎤 {msg.transcript}</p>
+                    <p className="text-sm text-gray-400 font-medium mb-2 italic">🎤 {msg.transcript}</p>
                 )}
-                <p className="font-medium text-sm leading-relaxed">{msg.content}</p>
+                <p className="font-bold text-lg md:text-xl leading-relaxed">{msg.content}</p>
                 {msg.scores && (
                     <div className="flex flex-wrap gap-1.5 mt-2">
                         <ScorePill label="Fluency" value={msg.scores.fluency} />
@@ -67,6 +78,52 @@ function Bubble({ msg }: { msg: Message }) {
                 )}
             </div>
         </motion.div>
+    );
+}
+
+/* ── Floating Background ─────────────────────────────────────── */
+function FloatingBackground({ topicId }: { topicId: string }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted) return <div className="absolute inset-0 bg-slate-50 z-0" />;
+
+    const emojis = FLOATING_EMOJIS[topicId] || FLOATING_EMOJIS.free;
+    const items = [...emojis, ...emojis, ...emojis];
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-slate-50">
+            {items.map((emoji, i) => {
+                const xPos = Math.random() * 100; // viewport width %
+                const delay = Math.random() * 15;
+                const duration = 20 + Math.random() * 30; // very slow floating
+
+                return (
+                    <motion.div
+                        key={i}
+                        className="absolute text-5xl md:text-7xl opacity-20 drop-shadow-sm select-none"
+                        initial={{
+                            left: `${xPos}vw`,
+                            bottom: "-100px",
+                            rotate: 0,
+                            scale: 0.8 + Math.random() * 0.5,
+                        }}
+                        animate={{
+                            bottom: "120vh",
+                            rotate: 360,
+                            x: (Math.random() - 0.5) * 300,
+                        }}
+                        transition={{
+                            duration: duration,
+                            repeat: Infinity,
+                            delay: delay,
+                            ease: "linear",
+                        }}
+                    >
+                        {emoji}
+                    </motion.div>
+                );
+            })}
+        </div>
     );
 }
 
@@ -301,73 +358,84 @@ export default function SpeakingClubPage() {
 
     /* ── Chat UI ───────────────────────────────────────────────── */
     return (
-        <main className="h-screen flex flex-col bg-white" id="speaking-chat-page">
+        <main className="h-screen w-full flex flex-col relative overflow-hidden" id="speaking-chat-page">
 
-            {/* Header */}
-            <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between bg-white">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#FFB800] flex items-center justify-center text-xl shadow">
-                        🤖
+            {/* Animated Topic Background */}
+            <FloatingBackground topicId={topic.id} />
+
+            {/* Glassmorphism Centered Container */}
+            <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4 md:px-6 w-full max-w-5xl mx-auto py-6">
+                <div className="w-full flex-1 max-h-[92vh] bg-white/70 backdrop-blur-2xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-white/50 flex flex-col overflow-hidden">
+
+                    {/* Header */}
+                    <div className="border-b border-gray-200/50 px-6 py-5 flex items-center justify-between bg-white/40">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-[#FFB800] flex items-center justify-center text-2xl shadow-sm">
+                                🤖
+                            </div>
+                            <div>
+                                <div className="font-black text-[#111111] md:text-lg">Alex — AI Tutor</div>
+                                <div className="text-sm text-gray-500 font-bold">{topic.label} · {wsStatus}</div>
+                            </div>
+                        </div>
+                        <button
+                            id="end-session-btn"
+                            onClick={endSession}
+                            className="bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm px-5 py-2.5 flex items-center gap-2 transition-colors"
+                        >
+                            <X className="w-5 h-5" /> <span className="hidden md:inline">Tugatish</span>
+                        </button>
                     </div>
-                    <div>
-                        <div className="font-black text-[#111111] text-sm">Alex — AI Tutor</div>
-                        <div className="text-xs text-gray-400 font-medium">{topic.label} · {wsStatus}</div>
+
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto px-6 py-8 w-full scroll-smooth">
+                        <div className="max-w-4xl mx-auto w-full">
+                            {messages.map((m, i) => <Bubble key={i} msg={m} />)}
+                            <div ref={bottomRef} className="h-4" />
+                        </div>
+                    </div>
+
+                    {/* Input bar */}
+                    <div className="border-t border-gray-200/50 p-5 bg-white/50">
+                        <div className="max-w-4xl mx-auto flex items-center gap-3">
+                            {/* Voice button */}
+                            <button
+                                id="mic-btn"
+                                onClick={toggleRecording}
+                                className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${recording
+                                    ? "bg-red-500 text-white shadow-lg animate-pulse"
+                                    : "bg-[#FFB800] hover:bg-[#E5A600] text-white shadow-md hover:scale-105"
+                                    }`}
+                            >
+                                {recording ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                            </button>
+
+                            <input
+                                id="chat-input"
+                                type="text"
+                                value={text}
+                                onChange={(e) => setText(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && sendText()}
+                                placeholder="Xabar yoki savol yozing..."
+                                className="flex-1 bg-white/80 border border-gray-200/80 rounded-2xl px-6 py-4 text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#FFB800]/50 focus:border-[#FFB800] transition-colors shadow-sm"
+                            />
+
+                            <button
+                                id="send-btn"
+                                onClick={sendText}
+                                disabled={!text.trim()}
+                                className="w-14 h-14 rounded-full bg-[#111111] text-white flex items-center justify-center disabled:opacity-30 transition-all hover:bg-gray-800 disabled:hover:bg-[#111111] hover:scale-105 active:scale-95 shadow-md"
+                            >
+                                <Send className="w-5 h-5" />
+                            </button>
+                        </div>
+                        {recording && (
+                            <p className="text-center text-sm text-red-500 font-bold mt-3 animate-pulse drop-shadow-sm">
+                                🔴 Yozib olinmoqda... Tugatish ushun qizil tugmani bosing.
+                            </p>
+                        )}
                     </div>
                 </div>
-                <button
-                    id="end-session-btn"
-                    onClick={endSession}
-                    className="btn-outline text-sm px-4 py-2 flex items-center gap-1"
-                >
-                    <X className="w-4 h-4" /> Tugatish
-                </button>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 max-w-3xl w-full mx-auto">
-                {messages.map((m, i) => <Bubble key={i} msg={m} />)}
-                <div ref={bottomRef} />
-            </div>
-
-            {/* Input bar */}
-            <div className="border-t border-gray-100 px-6 py-4 bg-white">
-                <div className="max-w-3xl mx-auto flex items-center gap-3">
-                    {/* Voice button */}
-                    <button
-                        id="mic-btn"
-                        onClick={toggleRecording}
-                        className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${recording
-                            ? "bg-red-500 text-white shadow-lg animate-pulse"
-                            : "bg-[#FFB800] text-white shadow"
-                            }`}
-                    >
-                        {recording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                    </button>
-
-                    <input
-                        id="chat-input"
-                        type="text"
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && sendText()}
-                        placeholder="Yoki matn yozing..."
-                        className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-[#FFB800] transition-colors"
-                    />
-
-                    <button
-                        id="send-btn"
-                        onClick={sendText}
-                        disabled={!text.trim()}
-                        className="w-12 h-12 rounded-full bg-[#111111] text-white flex items-center justify-center disabled:opacity-30 transition-all hover:bg-gray-800"
-                    >
-                        <Send className="w-4 h-4" />
-                    </button>
-                </div>
-                {recording && (
-                    <p className="text-center text-xs text-red-500 font-bold mt-2 animate-pulse">
-                        🔴 Yozib olinmoqda... Tugatish uchun qayta bosing.
-                    </p>
-                )}
             </div>
         </main>
     );
