@@ -68,7 +68,7 @@ export default function AdminLessonsPage() {
         setLoading(true);
         setErrorMsg(null);
         try {
-            const res = await fetch("/api/videos");
+            const res = await fetch("/api/videos", { cache: "no-store" });
             if (!res.ok) {
                 const text = await res.text();
                 if (text.includes("<!DOCTYPE html>")) {

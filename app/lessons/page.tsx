@@ -105,14 +105,14 @@ function LessonsInner() {
                     const diff = LEVEL_CONFIG[placementLevel]?.diff;
                     if (diff) params.set("difficulty", String(diff));
                 }
-                const res = await fetch(`${API}/videos?${params}`);
+                const res = await fetch(`${API}/videos?${params}`, { cache: "no-store" });
                 if (res.ok) {
                     const data = await res.json();
                     if (data.length) {
                         setVideos(data);
                     } else {
                         // fallback: try without difficulty filter
-                        const r2 = await fetch(`${API}/videos${topic !== "All" ? `?topic=${topic}` : ""}`);
+                        const r2 = await fetch(`${API}/videos${topic !== "All" ? `?topic=${topic}` : ""}`, { cache: "no-store" });
                         const d2 = r2.ok ? await r2.json() : MOCK_VIDEOS;
                         // client-side filter by placement diff if possible
                         const diff = placementDone && placementLevel ? LEVEL_CONFIG[placementLevel]?.diff : null;

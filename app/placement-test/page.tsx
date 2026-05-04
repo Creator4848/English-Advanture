@@ -151,7 +151,7 @@ export default function PlacementTestPage() {
                     <motion.div className="card p-10 max-w-md w-full text-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                         <div className="text-7xl mb-5">{cfg.emoji}</div>
                         <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-black mb-4 ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
-                            {cfg.name} darajasi
+                            Sizning darajangiz: {cfg.name}
                         </div>
                         <p className="text-gray-500 font-medium text-sm mb-8 leading-relaxed">
                             Siz allaqachon daraja testini topshirgansiz. Darslar sizning darajangizga qarab ko'rsatiladi.
@@ -189,7 +189,7 @@ export default function PlacementTestPage() {
                         >
                             <div className="text-7xl mb-4">{cfg.emoji}</div>
                             <div className="text-[#FFB800] font-black text-sm mb-2">🎊 Natija tayyor!</div>
-                            <h1 className="text-4xl font-black text-[#111111] mb-2">{cfg.name} Daraja</h1>
+                            <h1 className="text-3xl sm:text-4xl font-black text-[#111111] mb-2">Sizning darajangiz: <span className={cfg.text}>{cfg.name}</span></h1>
                             <p className="text-gray-500 font-medium text-sm mb-6 max-w-sm mx-auto leading-relaxed">{result.description}</p>
 
                             {/* Score bar */}
